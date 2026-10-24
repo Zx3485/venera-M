@@ -139,6 +139,12 @@ class AppDio with DioMixin {
 
   static final Map<String, bool> _requests = {};
 
+  /// Maximum time to wait for another request with the same path to finish.
+  /// After this, the waiting request takes over the slot instead of hanging
+  /// forever. (A stale entry could otherwise block the path for the whole
+  /// process lifetime, e.g. after the reader page is disposed mid-request.)
+  static const _preventParallelTimeout = Duration(seconds: 30);
+
   @override
   Future<Response<T>> request<T>(
     String path, {
@@ -149,11 +155,23 @@ class AppDio with DioMixin {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
+    var acquiredSlot = false;
     if (options?.headers?['prevent-parallel'] == 'true') {
+      final deadline = DateTime.now().add(_preventParallelTimeout);
       while (_requests.containsKey(path)) {
+        if (DateTime.now().isAfter(deadline)) {
+          // Stale slot left behind by an aborted request. Take it over.
+          Log.error(
+            "Network",
+            "prevent-parallel timeout for $path, taking over the slot.",
+          );
+          _requests.remove(path);
+          break;
+        }
         await Future.delayed(const Duration(milliseconds: 20));
       }
       _requests[path] = true;
+      acquiredSlot = true;
       options!.headers!.remove('prevent-parallel');
     }
     try {
@@ -167,7 +185,7 @@ class AppDio with DioMixin {
         onReceiveProgress: onReceiveProgress,
       );
     } finally {
-      if (_requests.containsKey(path)) {
+      if (acquiredSlot) {
         _requests.remove(path);
       }
     }
