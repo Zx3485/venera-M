@@ -499,23 +499,28 @@ enum AppPageTransition {
 }
 
 /// 把设置里的字符串映射成 builder。未知值一律回退到平台默认。
+///
+/// ⚠ 这里刻意**不加 const**：Flutter 自带的 SlidePageTransitionBuilder /
+/// PredictiveBackPageTransitionsBuilder 在部分版本里不是 const 构造，
+/// 加了会在编译期报 "Cannot invoke a non-'const' constructor"。
+/// 这些 builder 每次只创建一次，省 const 没有实际收益。
 PageTransitionsBuilder resolvePageTransitionsBuilder() {
   final raw = appdata.settings['pageTransition']?.toString() ?? 'default';
   switch (raw) {
     case 'fade':
-      return const _FadePageTransitionsBuilder();
+      return _FadePageTransitionsBuilder();
     case 'zoom':
-      return const _ZoomPageTransitionsBuilder();
+      return _ZoomPageTransitionsBuilder();
     case 'slideUp':
-      return const _SlideUpPageTransitionsBuilder();
+      return _SlideUpPageTransitionsBuilder();
     case 'sharedAxisX':
-      return const _SharedAxisXPageTransitionsBuilder();
+      return _SharedAxisXPageTransitionsBuilder();
     case 'none':
-      return const _NoPageTransitionsBuilder();
+      return _NoPageTransitionsBuilder();
     default:
       return App.isAndroid
-          ? const PredictiveBackPageTransitionsBuilder()
-          : const SlidePageTransitionBuilder();
+          ? PredictiveBackPageTransitionsBuilder()
+          : SlidePageTransitionBuilder();
   }
 }
 
