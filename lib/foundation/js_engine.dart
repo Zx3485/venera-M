@@ -165,9 +165,13 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
           case "load_setting":
             String key = message["key"];
             String settingKey = message["setting_key"];
-            var source = ComicSource.find(key)!;
+            var source = ComicSource.find(key);
+            if (source == null) return null;
+            // settings 里没这个 key 时，`!['default']` 会抛空值异常，
+            // 异常一路抛回 QuickJS 把引擎搞坏 —— 之后同源的 loadInfo
+            // 只能拿到 undefined。改成 ?['default']，拿不到就返回 null。
             return source.data["settings"]?[settingKey] ??
-                source.settings?[settingKey]!['default'] ??
+                source.settings?[settingKey]?['default'] ??
                 (throw "Setting not found: $settingKey");
           case "isLogged":
             return ComicSource.find(message["key"])!.isLogged;
@@ -207,7 +211,13 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
       return null;
     } catch (e, s) {
       Log.error("Failed to handle message: $message\n$e\n$s", "JsEngine");
-      rethrow;
+      // 这里原来是 rethrow。_messageReceiver 是注册给 QuickJS 的桥接函数，
+      // rethrow 会把 Dart 异常抛进 JS 调用栈，打断引擎内部状态；之后同源的
+      // 后续调用（如 CopyManga 的 loadInfo）只能拿到 undefined，报
+      // "cannot read property 'name' of undefined"，而且引擎不会自愈，
+      // 只能杀进程重启 —— 与"关掉软件再开就好"的现象一致。
+      // 改成返回 null：JS 侧本来就要处理"取不到值"的情况。
+      return null;
     }
   }
 
