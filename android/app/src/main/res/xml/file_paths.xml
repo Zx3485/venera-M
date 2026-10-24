@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用内自动更新：允许把下载到 app 私有缓存目录里的 APK 通过 FileProvider 交给系统安装器。
+     cache-path 对应 getCacheDir()，Dart 侧用 getTemporaryDirectory() 存更新包。 -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+    <cache-path name="cache_root" path="." />
+</paths>

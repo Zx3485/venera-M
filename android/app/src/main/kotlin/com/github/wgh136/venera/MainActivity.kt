@@ -136,6 +136,15 @@ class MainActivity : FlutterFragmentActivity() {
                     }
                 }
 
+                "installApk" -> {
+                    val path = call.argument<String>("path")
+                    if (path == null) {
+                        res.error("BAD_ARGS", "path is null", null)
+                    } else {
+                        installApk(path, res)
+                    }
+                }
+
                 else -> res.notImplemented()
             }
         }
@@ -342,6 +351,46 @@ class MainActivity : FlutterFragmentActivity() {
                 it == PackageManager.PERMISSION_GRANTED
             })
             storagePermissionRequest = null
+        }
+    }
+
+    /// 用系统安装器安装下载好的 APK。
+    /// Android 8.0+ 需要「安装未知应用」权限，没给就跳到授权页。
+    private fun installApk(path: String, result: MethodChannel.Result) {
+        try {
+            val file = File(path)
+            if (!file.exists()) {
+                result.error("NOT_FOUND", "APK not found: $path", null)
+                return
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!packageManager.canRequestPackageInstalls()) {
+                    // 没有安装权限：带去设置页让用户手动开
+                    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                        .setData(Uri.parse("package:$packageName"))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(intent)
+                    result.error("NO_PERMISSION", "NEED_INSTALL_PERMISSION", null)
+                    return
+                }
+            }
+
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                "$packageName.fileprovider",
+                file
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            Log.e("Venera", "installApk failed", e)
+            result.error("INSTALL_FAILED", e.message, null)
         }
     }
 

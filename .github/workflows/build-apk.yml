@@ -13,7 +13,22 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # 固定签名：没有它每次构建的 debug keystore 都不同，新包无法覆盖安装。
+      # 需要两个 Secret：KEYSTORE_BASE64（key.jks 的 base64）、KEYSTORE_PROPS（key.properties 全文）
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PROPS: ${{ secrets.KEYSTORE_PROPS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::未配置 KEYSTORE_BASE64，将退回 debug 签名（无法覆盖安装）"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/key.jks
+          printf '%s' "$KEYSTORE_PROPS" > android/app/key.properties
+          echo "签名密钥已写入"
 
       # 从 pubspec.yaml 读版本号，顺便构造 release tag
       - name: Read version
@@ -30,7 +45,7 @@ jobs:
           flutter-version-file: pubspec.yaml
           architecture: x64
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -46,7 +61,7 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: venera-apk
           path: build/app/outputs/apk/release/*.apk

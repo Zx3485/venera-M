@@ -25,21 +25,33 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
-// Signing is optional. `android/key.properties` holds the author's private
-// keystore and is intentionally NOT committed to the repository, so a fresh
-// clone has no such file. Reading it unconditionally used to abort the build
-// with FileNotFoundException. When it is missing we fall back to the debug
-// keystore that the Android Gradle Plugin generates automatically, so the
-// project still builds and produces an installable APK.
+// 签名来源，优先级从高到低：
+//   1. key.properties（仓库根目录或 android/ 下）—— GitHub Actions 通过 Secrets 写入
+//   2. 环境变量 KEYSTORE_PATH / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD
+//   3. 都没有 → 退回 AGP 自动生成的 debug keystore
+//
+// ⚠ 第 3 种情况下，**每次构建用的 debug keystore 都是新随机生成的**，
+//   签名因此每次都不同，导致新包无法覆盖安装旧包（"与现有软件包存在冲突"）。
+//   要用应用内自动更新，必须固定密钥（走 1 或 2）。
 def keystorePropertiesFile = rootProject.file("key.properties")
+if (!keystorePropertiesFile.exists()) {
+    keystorePropertiesFile = file("key.properties")
+}
 def keystoreProperties = new Properties()
 def hasReleaseSigning = keystorePropertiesFile.exists()
 if (hasReleaseSigning) {
     keystorePropertiesFile.withReader("UTF-8") { reader ->
         keystoreProperties.load(reader)
     }
+} else if (System.getenv("KEYSTORE_PATH") != null) {
+    // 支持纯环境变量注入，便于 CI 使用
+    keystoreProperties.setProperty("storeFile", System.getenv("KEYSTORE_PATH"))
+    keystoreProperties.setProperty("storePassword", System.getenv("KEYSTORE_PASSWORD") ?: "")
+    keystoreProperties.setProperty("keyAlias", System.getenv("KEY_ALIAS") ?: "")
+    keystoreProperties.setProperty("keyPassword", System.getenv("KEY_PASSWORD") ?: "")
+    hasReleaseSigning = true
 } else {
-    logger.lifecycle("key.properties not found, falling back to the debug keystore.")
+    logger.lifecycle("⚠ 未配置签名，退回 debug keystore —— 每次构建签名都会变，无法覆盖安装。")
 }
 
 android {
@@ -151,4 +163,6 @@ flutter {
 dependencies {
     implementation "androidx.activity:activity-ktx:1.10.1"
     implementation 'androidx.documentfile:documentfile:1.0.1'
+    // 应用内自动更新：用 FileProvider 把下载好的 APK 交给系统安装器
+    implementation 'androidx.core:core:1.13.1'
 }

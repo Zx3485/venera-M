@@ -163,9 +163,22 @@ Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = fals
               ).paddingHorizontal(16),
               actions: [
                 Button.text(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
-                    launchUrlString(apkUrl ?? _kReleasePage);
+                    if (apkUrl == null) {
+                      // 没有 APK 直链，退回打开 Release 页面
+                      launchUrlString(_kReleasePage);
+                      return;
+                    }
+                    App.rootContext.showMessage(
+                      message: "Downloading update...".tl,
+                    );
+                    final ok = await ApkUpdater.downloadAndInstall(apkUrl);
+                    if (!ok) {
+                      // 下载或安装失败（含未授权「安装未知应用」）
+                      // 退回浏览器下载，至少保证用户能更新
+                      launchUrlString(_kReleasePage);
+                    }
                   },
                   child: Text("Update".tl),
                 ),

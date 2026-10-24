@@ -11,4 +11,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# 密钥的 base64 中间产物（拿去填 GitHub Secrets 用，绝不能提交）
+**/key.jks.b64
+**/key.clean.txt
 /app/.cxx/
