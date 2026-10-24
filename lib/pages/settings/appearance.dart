@@ -36,11 +36,41 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             "green": "Green".tl,
             "orange": "Orange".tl,
             "blue": "Blue".tl,
+            "yellow": "Yellow".tl,
+            "cyan": "Cyan".tl,
+            // 低饱和色
+            "mistBlue": "Mist Blue".tl,
+            "lilac": "Lilac".tl,
+            "sage": "Sage".tl,
+            "slate": "Slate".tl,
+            "coral": "Coral".tl,
+            "matcha": "Matcha".tl,
+            "sand": "Sand".tl,
+            "dusk": "Dusk".tl,
           },
           onChanged: () async {
             await App.init();
             App.forceRebuild();
           },
+        ).toSliver(),
+        SelectSetting(
+          title: "Page Transition".tl,
+          settingKey: "pageTransition",
+          optionTranslation: {
+            "default": "Follow System".tl,
+            "fade": "Fade".tl,
+            "zoom": "Zoom".tl,
+            "slideUp": "Slide Up".tl,
+            "sharedAxisX": "Slide Horizontal".tl,
+            "none": "None".tl,
+          },
+          onChanged: () async {
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        _SwitchSetting(
+          title: "Glass Effect".tl,
+          settingKey: "glassEffect",
         ).toSliver(),
       ],
     );

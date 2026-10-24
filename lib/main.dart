@@ -137,6 +137,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       'blue' => Colors.blue,
       'yellow' => Colors.yellow,
       'cyan' => Colors.cyan,
+      // 低饱和柔和色：模仿 iOS / Material You 的克制配色，
+      // 上屏比 Flutter 内置标准色更耐看。
+      'mistBlue' => const Color(0xFF6B8CAE),   // 雾霾蓝
+      'lilac' => const Color(0xFF9B84A8),      // 藕荷紫
+      'sage' => const Color(0xFF7A9A7E),       // 鼠尾草绿
+      'slate' => const Color(0xFF7A7E85),      // 岩灰
+      'coral' => const Color(0xFFE08080),      // 珊瑚
+      'matcha' => const Color(0xFFA8B89A),     // 抹茶
+      'sand' => const Color(0xFFC4A882),       // 暖沙
+      'dusk' => const Color(0xFF8E7CA6),       // 暮紫
       _ => Colors.blue,
     };
   }

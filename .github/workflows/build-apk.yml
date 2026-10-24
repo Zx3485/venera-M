@@ -3,7 +3,8 @@ name: Build APK (patched)
 on:
   workflow_dispatch:
   push:
-    branches: [master, main]
+    # 推任意分支都编译，方便在特性分支上试改；但只有 master 才发 Release
+    branches: ['**']
 
 # 发 Release 需要写权限
 permissions:
@@ -39,6 +40,20 @@ jobs:
           echo "short=${V%%+*}" >> $GITHUB_OUTPUT
           echo "version: $V"
 
+      # App 显示的版本号是 lib/foundation/app.dart 里写死的常量，不是读 pubspec。
+      # 忘同步会导致「检查更新」永远认为有新版本（本机版本更低），所以每次构建强制对齐。
+      - name: Sync version into app.dart
+        run: |
+          V="${{ steps.ver.outputs.short }}"
+          echo "把 app.dart 里的版本对齐到 $V"
+          sed -i -E "s/final version = \"[^\"]*\";/final version = \"$V\";/" lib/foundation/app.dart
+          grep -n 'final version =' lib/foundation/app.dart
+          # 确认真的改到了，没改到就直接失败，不要产出版本号不对的包
+          grep -q "final version = \"$V\";" lib/foundation/app.dart || {
+            echo "::error::app.dart 版本同步失败，找不到 final version 行"
+            exit 1
+          }
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -69,8 +84,10 @@ jobs:
 
       # 自动发 Release：App 里的「检查更新」查的就是这里
       # tag 用 v<version>，App 侧会剥掉 v 再比版本号
+      # ⚠ 只在 master 上发：特性分支编译出来只作为 Artifact 供测试，
+      #   否则每个分支都会抢同一个 tag，Release 会互相覆盖。
       - name: Publish release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

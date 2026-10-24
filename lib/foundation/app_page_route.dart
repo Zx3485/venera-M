@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:venera/foundation/app.dart';
+import 'package:venera/foundation/appdata.dart';
 
 const double _kBackGestureWidth = 20.0;
 const int _kMaxDroppedSwipePageForwardAnimationTime = 800;
@@ -117,14 +118,14 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
 
   @override
   Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-    PageTransitionsBuilder builder;
-    if (App.isAndroid) {
-      builder = PredictiveBackPageTransitionsBuilder();
-    } else {
-      builder = SlidePageTransitionBuilder();
-  }
+    final builder = resolvePageTransitionsBuilder();
+    PageTransitionsBuilder effective = builder;
+    // 用户选了别的动画时，就不要再用系统的预测式返回（它会覆盖自定义动画）
+    if (effective is PredictiveBackPageTransitionsBuilder && !App.isAndroid) {
+      effective = SlidePageTransitionBuilder();
+    }
 
-  return builder.buildTransitions(
+    return effective.buildTransitions(
         this,
         context,
         animation,
@@ -484,5 +485,180 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
         ),
       ),
     );
+  }
+}
+
+/// 页面过渡动画类型。设置项 `pageTransition` 的取值。
+enum AppPageTransition {
+  defaultTransition, // 平台原生
+  fade,              // 淡入淡出
+  zoom,              // 缩放淡入
+  slideUp,           // 从下往上
+  sharedAxisX,       // 水平推进（Material motion）
+  none,              // 无动画，瞬时切换
+}
+
+/// 把设置里的字符串映射成 builder。未知值一律回退到平台默认。
+PageTransitionsBuilder resolvePageTransitionsBuilder() {
+  final raw = appdata.settings['pageTransition']?.toString() ?? 'default';
+  switch (raw) {
+    case 'fade':
+      return const _FadePageTransitionsBuilder();
+    case 'zoom':
+      return const _ZoomPageTransitionsBuilder();
+    case 'slideUp':
+      return const _SlideUpPageTransitionsBuilder();
+    case 'sharedAxisX':
+      return const _SharedAxisXPageTransitionsBuilder();
+    case 'none':
+      return const _NoPageTransitionsBuilder();
+    default:
+      return App.isAndroid
+          ? const PredictiveBackPageTransitionsBuilder()
+          : const SlidePageTransitionBuilder();
+  }
+}
+
+/// 淡入淡出。旧页面轻微缩小并淡出，新页面淡入。
+class _FadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.96, end: 1.0).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// 缩放淡入。比 fade 更明显，适合强调层级变化。
+class _ZoomPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _ZoomPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.fastOutSlowIn,
+      reverseCurve: Curves.fastOutSlowIn.flipped,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.85, end: 1.0).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// 从下往上滑入，带一点淡入。类似底部弹出。
+class _SlideUpPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _SlideUpPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutQuint,
+      reverseCurve: Curves.easeInQuint,
+    );
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.12),
+        end: Offset.zero,
+      ).animate(curved),
+      child: FadeTransition(opacity: curved, child: child),
+    );
+  }
+}
+
+/// 水平推进：新页面从右侧推入，旧页面轻微左移淡出（Material shared axis X）。
+class _SharedAxisXPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _SharedAxisXPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final primary = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    final secondary = CurvedAnimation(
+      parent: secondaryAnimation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return SlideTransition(
+      // 进场的那一页
+      position: Tween<Offset>(
+        begin: const Offset(0.25, 0),
+        end: Offset.zero,
+      ).animate(primary),
+      child: FadeTransition(
+        opacity: primary,
+        child: SlideTransition(
+          // 退场的那一页
+          position: Tween<Offset>(
+            begin: Offset.zero,
+            end: const Offset(-0.25, 0),
+          ).animate(secondary),
+          child: FadeTransition(
+            opacity: Tween<double>(begin: 1.0, end: 0.0)
+                .animate(secondary),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 无动画。适合低端机或不喜欢动效的用户。
+class _NoPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _NoPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child;
   }
 }

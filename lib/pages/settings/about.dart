@@ -41,6 +41,10 @@ class _AboutSettingsState extends State<AboutSettings> {
               style: const TextStyle(fontSize: 16),
             ),
             Text("Venera-M".tl),
+            Text(
+              "更新功能测试版 · Update test build".tl,
+              style: const TextStyle(fontSize: 12),
+            ),
             const SizedBox(height: 8),
           ],
         ).toSliver(),
