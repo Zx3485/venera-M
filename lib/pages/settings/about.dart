@@ -170,7 +170,7 @@ Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = fals
                   onPressed: () async {
                     Navigator.pop(context);
                     if (apkUrl == null) {
-                      // 没有 APK 直链，退回打开 Release 页面
+                      // Release 里没找到 apk 资源，只能去页面手动下
                       launchUrlString(_kReleasePage);
                       return;
                     }
@@ -178,11 +178,26 @@ Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = fals
                       message: "Downloading update...".tl,
                     );
                     final ok = await ApkUpdater.downloadAndInstall(apkUrl);
-                    if (!ok) {
-                      // 下载或安装失败（含未授权「安装未知应用」）
-                      // 退回浏览器下载，至少保证用户能更新
-                      launchUrlString(_kReleasePage);
+                    if (ok) {
+                      // 安装器已拉起，剩下交给系统
+                      return;
                     }
+                    // 失败时按原因区分，不再无脑跳浏览器：
+                    // 未授权「安装未知应用」已经跳了系统设置页，只提示；
+                    // 其他原因才打开 Release 页面兜底。
+                    final reason = ApkUpdater.lastFailReason ?? "";
+                    if (reason == "no_permission") {
+                      App.rootContext.showMessage(
+                        message:
+                            "Allow installing unknown apps, then retry.".tl,
+                      );
+                      return;
+                    }
+                    App.rootContext.showMessage(
+                      message: "In-app update failed ($reason), opening page."
+                          .tl,
+                    );
+                    launchUrlString(_kReleasePage);
                   },
                   child: Text("Update".tl),
                 ),

@@ -19,6 +19,7 @@ import 'package:venera/utils/handle_text_share.dart';
 import 'package:venera/utils/opencc.dart';
 import 'package:venera/utils/tags_translation.dart';
 import 'package:venera/utils/translations.dart';
+import 'package:venera/utils/apk_updater.dart';
 import 'foundation/appdata.dart';
 
 extension _FutureInit<T> on Future<T> {
@@ -57,6 +58,8 @@ Future<void> init() async {
   if (App.isAndroid) {
     handleLinks();
     handleTextShare();
+    // 清掉上次更新残留的 APK（系统安装器可能当时还占用着文件）
+    ApkUpdater.cleanUp();
     try {
       await FlutterDisplayMode.setHighRefreshRate();
     } catch(e) {

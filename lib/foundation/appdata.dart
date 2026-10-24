@@ -181,6 +181,15 @@ class Settings with ChangeNotifier {
     // 磨砂玻璃效果。开启后工具栏/浮层用 BackdropFilter 模糊背景，
     // 中低端机可能掉帧，默认关。
     'glassEffect': false,
+    // 玻璃填充不透明度 0.0~0.9。太低文字看不清，太高模糊透不出来。
+    'glassOpacity': 0.18,
+    // 模糊半径（sigma）0~60。超过 40 基本糊成色块。
+    'glassBlur': 20.0,
+    // 顶部高光渐变，模拟光线掠过玻璃表面
+    'glassHighlight': true,
+    // 分界面开关：阅读器工具栏 / 列表页标题栏
+    'glassInReader': true,
+    'glassInAppBar': true,
     'newFavoriteAddTo': 'end', // start, end
     'moveFavoriteAfterRead': 'none', // none, end, start
     'proxy': 'system', // direct, system, proxy string

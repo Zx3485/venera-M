@@ -179,12 +179,12 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           // 磨砂开启时降低底色不透明度，让背后的漫画透出来 —— 这是
           // 磨砂玻璃的关键：底色太厚（0.92）模糊层根本看不见。
           color: context.colorScheme.surface.toOpacity(
-            isGlassEnabled ? 0.55 : 0.92,
+            (glassInReader ? (0.92 - glassOpacity * 0.8) : 0.92),
           ),
           border: Border(
             bottom: BorderSide(
               color: Colors.grey.toOpacity(
-                isGlassEnabled ? 0.25 : 0.5,
+                (glassInReader ? 0.25 : 0.5),
               ),
               width: 0.5,
             ),
@@ -563,13 +563,13 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
         decoration: BoxDecoration(
           // 同顶部工具栏：磨砂开启时让底色变薄，否则模糊看不出来
           color: context.colorScheme.surface.toOpacity(
-            isGlassEnabled ? 0.55 : 0.92,
+            (glassInReader ? (0.92 - glassOpacity * 0.8) : 0.92),
           ),
           border: isOpen
               ? Border(
                   top: BorderSide(
                     color: Colors.grey.toOpacity(
-                      isGlassEnabled ? 0.25 : 0.5,
+                      (glassInReader ? 0.25 : 0.5),
                     ),
                     width: 0.5,
                   ),

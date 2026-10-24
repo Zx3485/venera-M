@@ -1,29 +1,64 @@
 part of 'components.dart';
 
+// ───────────────────────── 磨砂玻璃 ─────────────────────────
+// 全部参数都从 appdata.settings 读，用户可在「设置 → 外观」里调：
+//   glassEffect    总开关
+//   glassOpacity   填充不透明度 0.0~0.9
+//   glassBlur      模糊半径 0~60
+//   glassHighlight 顶部高光渐变
+//   glassInReader  阅读器工具栏是否用磨砂
+//   glassInAppBar  列表页标题栏是否用磨砂
+
+/// 磨砂效果总开关。
+bool get isGlassEnabled => appdata.settings['glassEffect'] == true;
+
+/// 填充不透明度。做了夹取，防止旧配置里的越界值把界面搞坏。
+double get glassOpacity {
+  final v = appdata.settings['glassOpacity'];
+  final d = v is num ? v.toDouble() : 0.18;
+  return d.clamp(0.0, 0.9);
+}
+
+/// 模糊半径。
+double get glassBlur {
+  final v = appdata.settings['glassBlur'];
+  final d = v is num ? v.toDouble() : 20.0;
+  return d.clamp(0.0, 60.0);
+}
+
+/// 是否叠加顶部高光。
+bool get glassHighlight => appdata.settings['glassHighlight'] == true;
+
+/// 阅读器工具栏是否用磨砂。
+bool get glassInReader =>
+    isGlassEnabled && appdata.settings['glassInReader'] == true;
+
+/// 列表页标题栏是否用磨砂。
+bool get glassInAppBar =>
+    isGlassEnabled && appdata.settings['glassInAppBar'] == true;
+
 /// iOS 风格的磨砂玻璃容器。
 ///
-/// 由三层叠出来：
-///   1. BackdropFilter 模糊背后的内容（关键，没它只是一块半透明布）
+/// 三层叠出来：
+///   1. BackdropFilter 模糊背后的内容（没它只是一块半透明布）
 ///   2. 半透明填充色 —— 决定"玻璃"偏冷还是偏暖
-///   3. 顶部 1px 高光边框 —— iOS 那种"玻璃边缘反光"的错觉来源
+///   3. 顶部渐变高光 —— iOS 那种"玻璃边缘反光"的错觉来源
 ///
-/// ⚠ 背后必须有内容（图片、渐变、其他颜色块）才看得出来。
+/// ⚠ 背后必须有内容（图片、渐变、其他色块）才看得出来。
 ///   背后是纯色时只会变成一块略灰的蒙版。
-/// ⚠ BackdropFilter 是实时采样，中低端机上开销明显，量大时要关掉。
 class GlassCard extends StatelessWidget {
   final Widget child;
 
-  /// 模糊强度。iOS 常见区间 10~30，超过 40 会糊成一片。
-  final double blur;
+  /// 覆盖全局模糊值；null 用设置里的。
+  final double? blurOverride;
 
   final BorderRadius? borderRadius;
 
-  /// 玻璃填充的不透明度。0.10~0.25 之间比较像真玻璃，
-  /// 太高会变成实心卡片，太低会看不清文字。
-  final double opacity;
+  /// 覆盖全局不透明度；null 用设置里的。
+  final double? opacityOverride;
 
-  /// 是否画那圈顶部高光描边。
-  final bool showBorder;
+  /// 覆盖全局高光开关；null 用设置里的。
+  final bool? highlightOverride;
 
   final EdgeInsetsGeometry? padding;
 
@@ -31,10 +66,10 @@ class GlassCard extends StatelessWidget {
 
   const GlassCard({
     required this.child,
-    this.blur = 20,
+    this.blurOverride,
     this.borderRadius,
-    this.opacity = 0.18,
-    this.showBorder = true,
+    this.opacityOverride,
+    this.highlightOverride,
     this.padding,
     this.clipBehavior = Clip.antiAlias,
     super.key,
@@ -42,86 +77,86 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
     final isDark = context.isDarkMode;
     final radius = borderRadius ?? BorderRadius.circular(16);
-
-    // 暗色下用白玻璃，亮色下用白玻璃偏灰，都能压住背景又不脏
-    final base = isDark ? Colors.white : Colors.white;
-    final fill = base.withValues(alpha: isDark ? opacity * 0.6 : opacity + 0.35);
+    final sigma = blurOverride ?? glassBlur;
+    final opacity = opacityOverride ?? glassOpacity;
+    final showHighlight = highlightOverride ?? glassHighlight;
 
     Widget content = child;
     if (padding != null) {
       content = Padding(padding: padding!, child: content);
     }
 
-    Widget glass = ClipRRect(
+    return ClipRRect(
       borderRadius: radius,
       clipBehavior: clipBehavior,
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(
-          sigmaX: blur,
-          sigmaY: blur,
+          sigmaX: sigma,
+          sigmaY: sigma,
           tileMode: TileMode.mirror,
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: fill,
+            color: Colors.white.withValues(
+              alpha: isDark ? opacity * 0.6 : opacity,
+            ),
             borderRadius: radius,
-            border: showBorder
-                ? Border.all(
-                    // 顶部亮、底部暗，模拟光线从上打下来
-                    color: (isDark ? Colors.white : Colors.white)
-                        .withValues(alpha: isDark ? 0.14 : 0.55),
-                    width: 0.8,
-                  )
-                : null,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: isDark ? 0.14 : 0.45),
+              width: 0.8,
+            ),
           ),
-          child: content,
+          child: Stack(
+            children: [
+              content,
+              if (showHighlight)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: radius,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(
+                              alpha: isDark ? 0.06 : 0.16,
+                            ),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.55],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
-
-    // 一层极淡的投影，让玻璃"浮"起来，而不是贴在背景上
-    if (isDark) {
-      glass = DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: glass,
-      );
-    }
-
-    return glass;
   }
 }
 
-/// 磨砂效果总开关。为 true 时 GlassCard 才真的模糊；
-/// 关闭时退化成普通半透明卡片（省性能）。
-bool get isGlassEnabled => appdata.settings['glassEffect'] == true;
-
 /// 按开关生成磨砂或普通背景。
-/// 用法：需要玻璃质感的地方包一层 [adaptiveGlass]。
+/// 需要玻璃质感的地方包一层，关掉时自动退化成实心卡片。
 Widget adaptiveGlass({
   required Widget child,
-  double blur = 20,
+  double? blur,
   BorderRadius? borderRadius,
-  double opacity = 0.18,
+  double? opacity,
   EdgeInsetsGeometry? padding,
+  Color? fallbackColor,
 }) {
   if (!isGlassEnabled) {
     return Container(
       decoration: BoxDecoration(
-        color: appdata.settings['theme_mode'] == 'dark'
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.white.withValues(alpha: 0.85),
+        color: fallbackColor ??
+            (appdata.settings['theme_mode'] == 'dark'
+                ? Colors.black.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.85)),
         borderRadius: borderRadius ?? BorderRadius.circular(16),
       ),
       padding: padding,
@@ -129,9 +164,9 @@ Widget adaptiveGlass({
     );
   }
   return GlassCard(
-    blur: blur,
+    blurOverride: blur,
     borderRadius: borderRadius,
-    opacity: opacity,
+    opacityOverride: opacity,
     padding: padding,
     child: child,
   );
