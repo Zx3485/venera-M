@@ -92,7 +92,10 @@ abstract class ImageDownloader {
 
   /// Cancel all loading images.
   static void cancelAllLoadingImages() {
-    for (var wrapper in _loadingImages.values) {
+    // Snapshot first: cancel() notifies onClosed, which removes entries from
+    // _loadingImages. Iterating the live map while it is being modified would
+    // throw a ConcurrentModificationError.
+    for (var wrapper in _loadingImages.values.toList()) {
       wrapper.cancel();
     }
     _loadingImages.clear();
@@ -104,7 +107,15 @@ abstract class ImageDownloader {
       String imageKey, String? sourceKey, String cid, String eid) {
     final cacheKey = "$imageKey@$sourceKey@$cid@$eid";
     if (_loadingImages.containsKey(cacheKey)) {
-      return _loadingImages[cacheKey]!.stream;
+      final existing = _loadingImages[cacheKey]!;
+      if (!existing.isClosed) {
+        // Still alive, share it with the new listener.
+        return existing.stream;
+      }
+      // A closed wrapper left behind by cancelAllLoadingImages(). Reusing it
+      // would throw "Stream is closed" on every retry, so drop it and start
+      // a fresh download instead.
+      _loadingImages.remove(cacheKey);
     }
     final stream = _StreamWrapper<ImageDownloadProgress>(
       _loadComicImage(imageKey, sourceKey, cid, eid),
@@ -306,6 +317,10 @@ class _StreamWrapper<T> {
     }
     controllers.clear();
     isClosed = true;
+    // Notify the owner so it can drop this wrapper from its registry.
+    // Without this the map keeps a dead wrapper and every later
+    // `stream` access throws "Stream is closed".
+    onClosed(this);
   }
 }
 
