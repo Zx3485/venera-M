@@ -78,16 +78,26 @@ class _AboutSettingsState extends State<AboutSettings> {
 const _kRepoOwner = "Zx3485";
 const _kRepoName = "venera-M";
 const _kReleasePage = "https://github.com/$_kRepoOwner/$_kRepoName/releases";
-const _kLatestApi =
-    "https://api.github.com/repos/$_kRepoOwner/$_kRepoName/releases/latest";
+/// 网页版 latest，会 302 到 /releases/tag/vX.Y.Z —— 不消耗 API 配额。
+const _kLatestHtml = "https://github.com/$_kRepoOwner/$_kRepoName/releases/latest";
+
+/// 上一次检查更新的失败原因，供界面提示。
+/// 取值：null（成功或无需更新）/ rate_limited / http_xxx / network / parse
+String? lastCheckUpdateError;
 
 /// 查 GitHub Releases 最新版，比本机新就返回 release 信息（含 APK 直链）。
-/// 与原来的差别：不再拉 pubspec.yaml 只比版本号，而是直接读 Release，
-/// 这样点「更新」能直接拿到 APK 下载地址，不用自己去页面里翻。
+///
+/// 两条路，按顺序试：
+///   1. GitHub API /releases/latest —— 能拿到 assets 直链，但**匿名每小时只有 60 次**
+///   2. 网页 /releases/latest —— 跟随 302 从 URL 里读 tag，**不吃 API 配额**
+/// 第 1 条限流时自动退到第 2 条，这样即使 API 没额度也能发现新版本。
 Future<Map<String, dynamic>?> fetchLatestRelease() async {
+  lastCheckUpdateError = null;
+
+  // ── 路线 1：API ──
   try {
     var res = await AppDio().get(
-      _kLatestApi,
+      "https://api.github.com/repos/$_kRepoOwner/$_kRepoName/releases/latest",
       options: Options(
         headers: {
           'Accept': 'application/vnd.github+json',
@@ -96,47 +106,111 @@ Future<Map<String, dynamic>?> fetchLatestRelease() async {
         validateStatus: (s) => s != null && s < 500,
       ),
     );
-    if (res.statusCode != 200) {
-      Log.info("Check Update", "GitHub API ${res.statusCode}: ${res.data}");
+    if (res.statusCode == 200) {
+      var data = res.data;
+      if (data is Map) {
+        final r = _parseApiRelease(data);
+        if (r != null) return r;
+        // 版本不比本机新，直接返回 null（不需要再试网页）
+        return null;
+      }
+    } else // 403/429 或 5xx，退到网页路线
+    if (res.statusCode == 403 || res.statusCode == 429) {
+      lastCheckUpdateError = "rate_limited";
+      Log.info("Check Update", "API 限流，改走网页路线");
+    } else {
+      lastCheckUpdateError = "http_${res.statusCode}";
+      Log.info("Check Update", "API ${res.statusCode}，改走网页路线");
+    }
+  } catch (e, s) {
+    lastCheckUpdateError = "network";
+    Log.error("Check Update", "API 失败: $e\n$s");
+  }
+
+  // ── 路线 2：网页重定向（不吃 API 配额）──
+  try {
+    final version = await _fetchLatestTagFromHtml();
+    if (version == null) {
+      lastCheckUpdateError ??= "parse";
       return null;
     }
-    var data = res.data;
-    if (data is! Map) return null;
-
-    var tag = data["tag_name"]?.toString() ?? "";
-    var version = tag.startsWith("v") ? tag.substring(1) : tag;
-    if (version.isEmpty) return null;
-    version = version.split("+").first;
     if (!_compareVersion(version, App.version)) return null;
-
-    // 优先挑 arm64 的包，挑不到就用第一个 apk
-    String? apkUrl;
-    final assets = data["assets"];
-    if (assets is List) {
-      final apks = assets
-          .where((a) =>
-              a is Map && (a["name"]?.toString() ?? "").endsWith(".apk"))
-          .toList();
-      if (apks.isNotEmpty) {
-        final arm64 = apks
-            .where((a) => a["name"].toString().toLowerCase().contains("arm64"))
-            .toList();
-        apkUrl = (arm64.isNotEmpty ? arm64.first : apks.first)
-            ["browser_download_url"]
-            ?.toString();
-      }
-    }
-
+    // 拿不到 assets 直链，只能跳 Release 页
     return {
       "version": version,
-      "apkUrl": apkUrl,
-      "pageUrl": data["html_url"]?.toString() ?? _kReleasePage,
-      "body": data["body"]?.toString() ?? "",
+      "apkUrl": null,
+      "pageUrl": "$_kReleasePage/tag/v$version",
+      "body": "",
     };
   } catch (e, s) {
-    Log.error("Check Update", e.toString(), s);
+    lastCheckUpdateError ??= "network";
+    Log.error("Check Update", "网页路线失败: $e\n$s");
     return null;
   }
+}
+
+/// 从网页版 /releases/latest 的 302 重定向里读出 tag。
+/// 返回去掉 v 前缀的版本号，例如 "1.6.9"。
+Future<String?> _fetchLatestTagFromHtml() async {
+  final client = HttpClient();
+  try {
+    final req = await client.getUrl(Uri.parse(_kLatestHtml));
+    req.headers.set(HttpHeaders.userAgentHeader, "venera-m");
+    // 关键：不自动跟随重定向，我们要自己读 Location
+    req.followRedirects = false;
+    final res = await req.close();
+    // 丢弃响应体，避免占内存
+    await res.drain<void>();
+
+    String? location = res.headers.value(HttpHeaders.locationHeader);
+    // 有的网络环境会给 200 + 正文（不重定向），那就从当前 URL 判断
+    if (location == null || location.isEmpty) {
+      if (res.statusCode == 200) {
+        // 已是最新时某些情况下直接 200 到 /releases（无 tag），视为无法判断
+        return null;
+      }
+      return null;
+    }
+    final m = RegExp(r'/tag/v?([0-9]+(?:\.[0-9]+)*)').firstMatch(location);
+    if (m == null) return null;
+    return m.group(1);
+  } finally {
+    client.close();
+  }
+}
+
+/// 解析 GitHub API 的 release JSON。
+Map<String, dynamic>? _parseApiRelease(Map data) {
+  var tag = data["tag_name"]?.toString() ?? "";
+  var version = tag.startsWith("v") ? tag.substring(1) : tag;
+  if (version.isEmpty) return null;
+  version = version.split("+").first;
+  if (!_compareVersion(version, App.version)) return null;
+
+  // 优先挑 arm64 的包，挑不到就用第一个 apk
+  String? apkUrl;
+  final assets = data["assets"];
+  if (assets is List) {
+    final apks = assets
+        .where((a) =>
+            a is Map && (a["name"]?.toString() ?? "").endsWith(".apk"))
+        .toList();
+    if (apks.isNotEmpty) {
+      final arm64 = apks
+          .where((a) => a["name"].toString().toLowerCase().contains("arm64"))
+          .toList();
+      apkUrl = (arm64.isNotEmpty ? arm64.first : apks.first)
+          ["browser_download_url"]
+          ?.toString();
+    }
+  }
+
+  return {
+    "version": version,
+    "apkUrl": apkUrl,
+    "pageUrl": data["html_url"]?.toString() ?? _kReleasePage,
+    "body": data["body"]?.toString() ?? "",
+  };
 }
 
 Future<bool> checkUpdate() async {
@@ -205,7 +279,24 @@ Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = fals
             );
           });
     } else if (showMessageIfNoUpdate) {
-      App.rootContext.showMessage(message: "No new version available".tl);
+      // 区分「确实没有新版本」和「查询失败」—— 之前两者都显示同一句话，
+      // 导致限流时也告诉用户"已是最新"，无从排查。
+      final err = lastCheckUpdateError;
+      if (err == null) {
+        App.rootContext.showMessage(message: "No new version available".tl);
+      } else if (err == "rate_limited") {
+        App.rootContext.showMessage(
+          message: "GitHub rate limited, try again later.".tl,
+        );
+      } else if (err == "network") {
+        App.rootContext.showMessage(
+          message: "Network error, check your connection.".tl,
+        );
+      } else {
+        App.rootContext.showMessage(
+          message: "Update check failed ($err)".tl,
+        );
+      }
     }
   } catch (e, s) {
     Log.error("Check Update", e.toString(), s);
