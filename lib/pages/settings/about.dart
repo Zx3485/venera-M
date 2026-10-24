@@ -71,7 +71,7 @@ class _AboutSettingsState extends State<AboutSettings> {
 }
 
 /// 自动更新指向自己的仓库。
-const _kRepoOwner = "mazixiao922-dot";
+const _kRepoOwner = "Zx3485";
 const _kRepoName = "venera-M";
 const _kReleasePage = "https://github.com/$_kRepoOwner/$_kRepoName/releases";
 const _kLatestApi =
