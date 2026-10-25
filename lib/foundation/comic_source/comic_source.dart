@@ -114,6 +114,52 @@ class ComicSourceManager with ChangeNotifier, Init {
     }
   }
 
+  static final _temporaryLimitPattern = RegExp(r'\b210\b');
+
+  static DateTime? _lastRecoveryAt;
+
+  /// Whether [message] is CopyManga's "uninstall the cracked app" block, which
+  /// the source scripts surface as an ordinary request error.
+  static bool isTemporaryLimitMessage(String? message) =>
+      message != null && _temporaryLimitPattern.hasMatch(message);
+
+  static bool get _canRecover {
+    final last = _lastRecoveryAt;
+    if (last == null) {
+      return true;
+    }
+    return DateTime.now().difference(last) > const Duration(seconds: 15);
+  }
+
+  /// Rebuild the JS runtime once and reload every source.
+  ///
+  /// Rebuilding throws away the source script's in-memory throttle counters,
+  /// which is what restarting the app used to do. Concurrent callers share the
+  /// same rebuild, and the cooldown keeps a burst of 210 answers from starting
+  /// one rebuild per request.
+  Future<bool> recoverFromTemporaryLimit() async {
+    final running = _reloading;
+    if (running != null) {
+      await running;
+      return true;
+    }
+    if (!_canRecover) {
+      return false;
+    }
+    _lastRecoveryAt = DateTime.now();
+    Log.info(
+      "ComicSource",
+      "Temporary limit (210) detected, rebuilding JS engine and retrying",
+    );
+    try {
+      await resetEngineAndReload();
+      return true;
+    } catch (e, s) {
+      Log.error("ComicSource", "JS engine rebuild failed: $e\n$s");
+      return false;
+    }
+  }
+
   void add(ComicSource source) {
     _sources.add(source);
     notifyListeners();

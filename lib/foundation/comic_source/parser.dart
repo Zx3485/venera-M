@@ -765,32 +765,48 @@ class ComicSourceParser {
 
   LoadComicFunc? _parseLoadComicFunc() {
     return (id) async {
-      try {
-        var res = await JsEngine().runCode("""
+      for (var attempt = 0; attempt < 2; attempt++) {
+        try {
+          var res = await JsEngine().runCode("""
           ComicSource.sources.$_key.comic.loadInfo(${jsonEncode(id)})
         """);
-        if (res is! Map<String, dynamic>) throw "Invalid data";
-        res['comicId'] = id;
-        res['sourceKey'] = _key;
-        return Res(ComicDetails.fromJson(res));
-      } catch (e, s) {
-        Log.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+          if (res is! Map<String, dynamic>) throw "Invalid data";
+          res['comicId'] = id;
+          res['sourceKey'] = _key;
+          return Res(ComicDetails.fromJson(res));
+        } catch (e, s) {
+          Log.error("Network", "$e\n$s");
+          if (attempt == 0 &&
+              ComicSourceManager.isTemporaryLimitMessage(e.toString()) &&
+              await ComicSourceManager().recoverFromTemporaryLimit()) {
+            continue;
+          }
+          return Res.error(e.toString());
+        }
       }
+      return const Res.error("Invalid status code: 210");
     };
   }
 
   LoadComicPagesFunc? _parseLoadComicPagesFunc() {
     return (id, ep) async {
-      try {
-        var res = await JsEngine().runCode("""
+      for (var attempt = 0; attempt < 2; attempt++) {
+        try {
+          var res = await JsEngine().runCode("""
           ComicSource.sources.$_key.comic.loadEp(${jsonEncode(id)}, ${jsonEncode(ep)})
         """);
-        return Res(List.from(res["images"]));
-      } catch (e, s) {
-        Log.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+          return Res(List.from(res["images"]));
+        } catch (e, s) {
+          Log.error("Network", "$e\n$s");
+          if (attempt == 0 &&
+              ComicSourceManager.isTemporaryLimitMessage(e.toString()) &&
+              await ComicSourceManager().recoverFromTemporaryLimit()) {
+            continue;
+          }
+          return Res.error(e.toString());
+        }
       }
+      return const Res.error("Invalid status code: 210");
     };
   }
 
