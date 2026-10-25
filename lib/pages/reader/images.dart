@@ -25,6 +25,11 @@ class _ReaderImagesState extends State<_ReaderImages> {
   /// reader, so a per-state flag alone could ping-pong between fresh states.
   static DateTime? _lastAutoReloadAt;
 
+  /// How long a single page-list request may take before it is treated as a
+  /// throttled answer. The source script sleeps 40s on 210, so the timeout has
+  /// to fire while it is still waiting.
+  static const _loadTimeout = Duration(seconds: 20);
+
   static bool _isTemporaryLimit(String? message) =>
       message != null && _temporaryLimitPattern.hasMatch(message);
 
@@ -99,14 +104,29 @@ class _ReaderImagesState extends State<_ReaderImages> {
       }
     } else {
       var cp = reader.widget.chapters?.ids.elementAtOrNull(reader.chapter - 1);
-      var res = await reader.type.comicSource!.loadComicPages!(
-        reader.widget.cid,
-        cp,
-      );
+      // The source script swallows 210 answers itself and logs
+      // "access too frequent, waiting 40s", so the future may stay pending
+      // instead of ever returning an error. A timeout is therefore the only
+      // reliable signal, and it has to be treated like a 210 error.
+      var timedOut = false;
+      Res<List<String>> res;
+      try {
+        res = await reader.type.comicSource!
+            .loadComicPages!(reader.widget.cid, cp)
+            .timeout(_loadTimeout);
+      } on TimeoutException {
+        Log.info(
+          "ComicSource",
+          "Source did not answer within ${_loadTimeout.inSeconds}s, "
+          "treating it as a temporary limit",
+        );
+        timedOut = true;
+        res = const Res.error("Timed out waiting for the source (210)");
+      }
       if (res.error &&
           !_autoReloaded &&
           _canAutoReload() &&
-          _isTemporaryLimit(res.errorMessage)) {
+          (timedOut || _isTemporaryLimit(res.errorMessage))) {
         // CopyManga answers with a non-standard 210 status code while the
         // device is temporarily limited. Rebuilding the JS runtime throws away
         // every in-memory session the source held, which is exactly what
@@ -129,7 +149,13 @@ class _ReaderImagesState extends State<_ReaderImages> {
         }
         var source = ComicSource.find(sourceKey);
         if (source != null && source.loadComicPages != null && mounted) {
-          res = await source.loadComicPages!(reader.widget.cid, cp);
+          try {
+            res = await source
+                .loadComicPages!(reader.widget.cid, cp)
+                .timeout(_loadTimeout);
+          } on TimeoutException {
+            res = const Res.error("Timed out waiting for the source (210)");
+          }
         }
       }
       if (res.error) {
