@@ -70,7 +70,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         ).toSliver(),
 
         // ───────────────── 磨砂玻璃 ─────────────────
-        _SettingPartTitle(title: "Glass Effect".tl, icon: Icons.blur_on).toSliver(),
+        _SettingPartTitle(title: "Glass Effect".tl, icon: Icons.blur_on),
         _SwitchSetting(
           title: "Enable Glass".tl,
           settingKey: "glassEffect",
