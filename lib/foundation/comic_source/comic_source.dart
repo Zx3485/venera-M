@@ -98,9 +98,20 @@ class ComicSourceManager with ChangeNotifier, Init {
 
   Future<void> _doResetEngineAndReload() async {
     _sources.clear();
-    await JsEngine.reset();
-    await doInit();
-    notifyListeners();
+    try {
+      await JsEngine.reset();
+    } catch (e, s) {
+      Log.error("ComicSource", "JS engine rebuild failed: $e\n$s");
+    } finally {
+      // Never leave the manager with an empty source list: parse whatever is
+      // on disk again even when the rebuild itself failed.
+      try {
+        await doInit();
+      } catch (e, s) {
+        Log.error("ComicSource", "Reloading sources failed: $e\n$s");
+      }
+      notifyListeners();
+    }
   }
 
   void add(ComicSource source) {

@@ -63,10 +63,19 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
   /// The old runtime is disposed before the new one is created, so every
   /// global it held is discarded, and the new runtime is fully initialized
   /// before this future completes, so callers can use it right away.
+  ///
+  /// A source script keeps live JS values around (its callbacks and pending
+  /// timers), and closing a runtime that still holds them throws a reference
+  /// leak. That must not abort the rebuild, otherwise the caller would be left
+  /// without any engine at all.
   static Future<void> reset() async {
     final oldEngine = _cache;
     _cache = null;
-    oldEngine?.dispose();
+    try {
+      oldEngine?.dispose();
+    } catch (e, s) {
+      Log.error("JS Engine", "Failed to dispose old runtime: $e\n$s");
+    }
     final newEngine = JsEngine();
     await newEngine.init();
   }
@@ -295,8 +304,17 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
   void dispose() {
     _cache = null;
     _closed = true;
-    _engine?.close();
-    _engine?.port.close();
+    try {
+      _engine?.close();
+    } catch (e) {
+      Log.error("JS Engine", "runtime close failed: $e");
+    }
+    try {
+      _engine?.port.close();
+    } catch (_) {
+      // The runtime is on its way out either way.
+    }
+    _engine = null;
   }
 }
 
