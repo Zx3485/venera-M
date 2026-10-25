@@ -37,6 +37,9 @@ class ComicSourceManager with ChangeNotifier, Init {
 
   static ComicSourceManager? _instance;
 
+  /// Guard so concurrent recoveries share a single engine rebuild.
+  static Future<void>? _reloading;
+
   ComicSourceManager._create();
 
   factory ComicSourceManager() => _instance ??= ComicSourceManager._create();
@@ -76,6 +79,26 @@ class ComicSourceManager with ChangeNotifier, Init {
   Future reload() async {
     _sources.clear();
     JsEngine().runCode("ComicSource.sources = {};");
+    await doInit();
+    notifyListeners();
+  }
+
+  /// Rebuild the JS runtime and reload every source from disk.
+  ///
+  /// This is the closest equivalent to restarting the app: all in-memory JS
+  /// state (globals, cached tokens, session data) is thrown away together with
+  /// the runtime, then the sources are parsed again. Concurrent callers share
+  /// one rebuild, and the returned future only completes once the new runtime
+  /// is ready to use.
+  Future<void> resetEngineAndReload() {
+    return _reloading ??= _doResetEngineAndReload().whenComplete(() {
+      _reloading = null;
+    });
+  }
+
+  Future<void> _doResetEngineAndReload() async {
+    _sources.clear();
+    await JsEngine.reset();
     await doInit();
     notifyListeners();
   }

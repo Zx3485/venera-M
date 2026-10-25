@@ -12,6 +12,36 @@ class _ReaderImagesState extends State<_ReaderImages> {
 
   bool inProgress = false;
 
+  /// Matches CopyManga's non-standard 210 status code. The server uses it to
+  /// flag a temporary, device-level limit rather than a real HTTP error.
+  static final _temporaryLimitPattern = RegExp(r'\b210\b');
+
+  /// Whether the source has already been reloaded once for the current load,
+  /// so a single failed load never reloads twice.
+  bool _autoReloaded = false;
+
+  /// Timestamp of the last automatic source reload. Shared across reader
+  /// states on purpose: reloading notifies every listener and may rebuild the
+  /// reader, so a per-state flag alone could ping-pong between fresh states.
+  static DateTime? _lastAutoReloadAt;
+
+  static bool _isTemporaryLimit(String? message) =>
+      message != null && _temporaryLimitPattern.hasMatch(message);
+
+  static bool _canAutoReload() {
+    final last = _lastAutoReloadAt;
+    if (last == null) return true;
+    return DateTime.now().difference(last) > const Duration(seconds: 15);
+  }
+
+  static String _friendlyErrorMessage(String? message) {
+    if (_isTemporaryLimit(message)) {
+      return "拷贝漫画暂时限制了这台设备，已自动刷新会话；"
+          "如果仍然失败，请等待约 1 小时后重试或切换网络。";
+    }
+    return message ?? "Unknown error";
+  }
+
   late _ReaderState reader;
 
   @override
@@ -73,9 +103,38 @@ class _ReaderImagesState extends State<_ReaderImages> {
         reader.widget.cid,
         cp,
       );
+      if (res.error &&
+          !_autoReloaded &&
+          _canAutoReload() &&
+          _isTemporaryLimit(res.errorMessage)) {
+        // CopyManga answers with a non-standard 210 status code while the
+        // device is temporarily limited. Rebuilding the JS runtime throws away
+        // every in-memory session the source held, which is exactly what
+        // restarting the app used to do, so users no longer have to do it.
+        _autoReloaded = true;
+        _lastAutoReloadAt = DateTime.now();
+        Log.info(
+          "ComicSource",
+          "Temporary limit (210) detected, rebuilding JS engine and retrying",
+        );
+        final sourceKey = reader.type.sourceKey;
+        setState(() {
+          error = null;
+          reader.isLoading = true;
+        });
+        try {
+          await ComicSourceManager().resetEngineAndReload();
+        } catch (e, s) {
+          Log.error("ComicSource", "JS engine rebuild failed: $e\n$s");
+        }
+        var source = ComicSource.find(sourceKey);
+        if (source != null && source.loadComicPages != null && mounted) {
+          res = await source.loadComicPages!(reader.widget.cid, cp);
+        }
+      }
       if (res.error) {
         setState(() {
-          error = res.errorMessage;
+          error = _friendlyErrorMessage(res.errorMessage);
           reader.isLoading = false;
           inProgress = false;
         });
@@ -109,6 +168,7 @@ class _ReaderImagesState extends State<_ReaderImages> {
             message: error!,
             retry: () {
               setState(() {
+                _autoReloaded = false;
                 reader.isLoading = true;
                 error = null;
               });

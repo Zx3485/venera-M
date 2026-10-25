@@ -58,10 +58,17 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
 
   Dio? _dio;
 
-  static void reset() {
+  /// Recreate the JS runtime from scratch.
+  ///
+  /// The old runtime is disposed before the new one is created, so every
+  /// global it held is discarded, and the new runtime is fully initialized
+  /// before this future completes, so callers can use it right away.
+  static Future<void> reset() async {
+    final oldEngine = _cache;
     _cache = null;
-    _cache?.dispose();
-    JsEngine().init();
+    oldEngine?.dispose();
+    final newEngine = JsEngine();
+    await newEngine.init();
   }
 
   void resetDio() {
