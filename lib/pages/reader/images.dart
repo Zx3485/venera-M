@@ -27,8 +27,9 @@ class _ReaderImagesState extends State<_ReaderImages> {
 
   /// How long a single page-list request may take before it is treated as a
   /// throttled answer. The source script sleeps 40s on 210, so the timeout has
-  /// to fire while it is still waiting.
-  static const _loadTimeout = Duration(seconds: 20);
+  /// to fire while it is still waiting. Kept short because a healthy page-list
+  /// request answers in well under a second.
+  static const _loadTimeout = Duration(seconds: 8);
 
   static bool _isTemporaryLimit(String? message) =>
       message != null && _temporaryLimitPattern.hasMatch(message);

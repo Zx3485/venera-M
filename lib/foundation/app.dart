@@ -16,7 +16,7 @@ class _App {
   // 显示用的版本号。**不是从 pubspec.yaml 自动读的** —— 必须和 pubspec 的
   // version 字段手动保持一致，否则「检查更新」会永远判定有新版本。
   // CI 里由 .github/workflows/build-apk.yml 的 Sync version 步骤自动改写这一行。
-  final version = "1.6.14";
+  final version = "1.6.15";
 
   bool get isAndroid => Platform.isAndroid;
 
