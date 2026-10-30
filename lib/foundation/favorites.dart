@@ -491,7 +491,17 @@ class LocalFavoritesManager with ChangeNotifier {
     return res;
   }
 
-  bool existsFolder(String name) {
+  /// Whether [name] is an existing folder.
+  ///
+  /// [name] is nullable because it usually comes from
+  /// `appdata.settings['followUpdatesFolder']`, which is null when the user
+  /// never configured a folder for follow updates. A null name can never
+  /// match a folder, and saying so here beats an "Null is not a subtype of
+  /// String" crash on every reader open.
+  bool existsFolder(String? name) {
+    if (name == null) {
+      return false;
+    }
     return folderNames.contains(name);
   }
 

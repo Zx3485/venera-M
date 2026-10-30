@@ -196,10 +196,28 @@ class _ReaderState extends State<Reader>
     if (chapter < 1) {
       chapter = 1;
     }
-    if (widget.initialChapterGroup != null) {
-      for (int i = 0; i < (widget.initialChapterGroup! - 1); i++) {
+    if (widget.initialChapterGroup != null &&
+        (widget.chapters?.isGrouped ?? false)) {
+      // [initialChapterGroup] comes from history and may be stale: a comic can
+      // switch between grouped and flat chapters, or lose a group entirely.
+      // Walking past the stored groups used to crash on getGroupByIndex.
+      final groups = widget.chapters!.groupCount;
+      for (int i = 0;
+          i < (widget.initialChapterGroup! - 1) && i < groups;
+          i++) {
         chapter += widget.chapters!.getGroupByIndex(i).length;
       }
+    }
+    // The stored chapter index may also point past the current list (the comic
+    // gained or lost chapters, or history was recorded against another group).
+    // Without this the reader asks the source for a chapter id that does not
+    // exist and ends up requesting `chapter2/null`.
+    final chapterCount = widget.chapters?.length ?? 0;
+    if (chapterCount > 0 && chapter > chapterCount) {
+      chapter = chapterCount;
+    }
+    if (chapter < 1) {
+      chapter = 1;
     }
     if (widget.initialPage != null) {
       page = widget.initialPage!;

@@ -33,7 +33,13 @@ class _ReaderWithLoadingState
       history: data.history,
       initialChapter: widget.initialEp ?? data.history.ep,
       initialPage: widget.initialPage ?? data.history.page,
-      initialChapterGroup: data.history.group,
+      // [initialEp] is an explicit chapter index (for example the chapter of a
+      // page kept in image favorites), while [history.group] belongs to a
+      // different reading session. Combining them adds the chapters of the
+      // stored groups on top of an index that already points at the right
+      // chapter, which lands past the end of the list and used to request
+      // `chapter2/null`. An explicit chapter wins, so drop the stale group.
+      initialChapterGroup: widget.initialEp != null ? null : data.history.group,
       author: data.author,
       tags: data.tags,
     );

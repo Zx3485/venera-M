@@ -105,6 +105,19 @@ class _ReaderImagesState extends State<_ReaderImages> {
       }
     } else {
       var cp = reader.widget.chapters?.ids.elementAtOrNull(reader.chapter - 1);
+      if (cp == null) {
+        // There is no episode id to send, so asking the source is pointless:
+        // the request would go out as `chapter2/null` and the server answers
+        // with a 500. Say what actually went wrong instead.
+        setState(() {
+          error = "这一话没有可用的章节 ID，可能是章节列表已更新。"
+              "请返回后重新进入这本书。";
+          reader.isLoading = false;
+          inProgress = false;
+        });
+        context.readerScaffold.update();
+        return;
+      }
       // The source script swallows 210 answers itself and logs
       // "access too frequent, waiting 40s", so the future may stay pending
       // instead of ever returning an error. A timeout is therefore the only
