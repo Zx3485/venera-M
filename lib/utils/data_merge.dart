@@ -22,7 +22,6 @@ import 'package:sqlite3/sqlite3.dart';
 ///
 /// 这些函数都在 Isolate 内自建 sqlite 连接，调用前必须先关闭主线程上的
 /// HistoryManager / LocalFavoritesManager，调用后重新 init 它们。
-library;
 
 /// 合并 `history.db`（含 history 与 image_favorites 两张表）。
 void mergeHistoryDatabases({
