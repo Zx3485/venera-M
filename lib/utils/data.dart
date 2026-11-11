@@ -10,6 +10,7 @@ import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/history.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/network/cookie_jar.dart';
+import 'package:venera/utils/data_merge.dart';
 import 'package:venera/utils/ext.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 
@@ -44,7 +45,16 @@ Future<File> exportAppData([bool sync = true]) async {
   return cacheFile;
 }
 
-Future<void> importAppData(File file, [bool checkVersion = false]) async {
+/// 导入存档。
+///
+/// [merge] 为 true 时（WebDAV 自动同步走这条路）按主键**合并**，两台设备的
+/// 进度与收藏都不会丢失；为 false 时保持旧行为，整库覆盖（手动导入存档用，
+/// 用户明确要「恢复备份」的时候应该完全覆盖）。
+Future<void> importAppData(
+  File file, [
+  bool checkVersion = false,
+  bool merge = false,
+]) async {
   var cacheDirPath = FilePath.join(App.cachePath, 'temp_data');
   var cacheDir = Directory(cacheDirPath);
   if (cacheDir.existsSync()) {
@@ -68,16 +78,54 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     }
     if (await historyFile.exists()) {
       HistoryManager().close();
-      File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
-      historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
+      var localHistoryPath = FilePath.join(App.dataPath, "history.db");
+      if (merge) {
+        String? mergeError = await Isolate.run(() {
+          try {
+            mergeHistoryDatabases(
+              incomingPath: historyFile.path,
+              localPath: localHistoryPath,
+            );
+            return null;
+          } catch (e) {
+            return e.toString();
+          }
+        });
+        if (mergeError != null) {
+          Log.error("Data Merge", "Failed to merge history.db", mergeError);
+        }
+      } else {
+        File(localHistoryPath).deleteIfExistsSync();
+        historyFile.renameSync(localHistoryPath);
+      }
       HistoryManager().init();
     }
     if (await localFavoriteFile.exists()) {
       LocalFavoritesManager().close();
-      File(FilePath.join(App.dataPath, "local_favorite.db"))
-          .deleteIfExistsSync();
-      localFavoriteFile
-          .renameSync(FilePath.join(App.dataPath, "local_favorite.db"));
+      var localFavoritePath = FilePath.join(App.dataPath, "local_favorite.db");
+      if (merge) {
+        String? mergeError = await Isolate.run(() {
+          try {
+            mergeFavoriteDatabases(
+              incomingPath: localFavoriteFile.path,
+              localPath: localFavoritePath,
+            );
+            return null;
+          } catch (e) {
+            return e.toString();
+          }
+        });
+        if (mergeError != null) {
+          Log.error(
+            "Data Merge",
+            "Failed to merge local_favorite.db",
+            mergeError,
+          );
+        }
+      } else {
+        File(localFavoritePath).deleteIfExistsSync();
+        localFavoriteFile.renameSync(localFavoritePath);
+      }
       LocalFavoritesManager().init();
     }
     if (await appdataFile.exists()) {

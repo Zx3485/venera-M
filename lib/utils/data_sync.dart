@@ -203,18 +203,25 @@ class DataSync with ChangeNotifier {
         }
         var version =
             file.name!.split('-').elementAtOrNull(1)?.split('.').first;
-        if (version != null && int.tryParse(version) != null) {
-          var currentVersion = appdata.settings['dataVersion'];
-          if (currentVersion != null && int.parse(version) <= currentVersion) {
-            Log.info("Data Sync", 'No new data to download');
-            return const Res(true);
-          }
-        }
+        // 合并模式下不能靠版本号跳过：两台设备各自上传时版本号可能相同，
+        // 但内容不同，跳过就会漏掉合并。合并是幂等的，重复跑不会出问题。
         Log.info("Data Sync", "Downloading data from WebDAV server");
         var localFile = File(FilePath.join(App.cachePath, file.name!));
         await client.read2File(file.name!, localFile.path);
-        await importAppData(localFile, true);
+        await importAppData(localFile, false, true);
         await localFile.delete();
+        // 合并完成后把本地版本号抬到云端版本，避免下次重复下载同一个文件；
+        // 不主动触发上传，等下一次真实的数据变更再推。
+        if (version != null) {
+          var remoteVersion = int.tryParse(version);
+          var currentVersion = appdata.settings['dataVersion'];
+          if (remoteVersion != null &&
+              currentVersion is int &&
+              remoteVersion > currentVersion) {
+            appdata.settings['dataVersion'] = remoteVersion;
+            appdata.saveData(false);
+          }
+        }
         Log.info("Data Sync", "Data downloaded successfully");
         return const Res(true);
       } catch (e, s) {
