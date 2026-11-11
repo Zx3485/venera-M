@@ -1,0 +1,114 @@
+name: Build Windows (patched)
+
+# 只在需要时跑：手动触发，或者推一个打上 [build-windows] 标记的提交。
+# 桌面版编译约 25~35 分钟，比 APK 慢，所以不跟每次 push 走。
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    paths:
+      - '.github/workflows/build-windows.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # 从 pubspec.yaml 读版本号，release tag 与 App 内显示的版本要对齐
+      - name: Read version
+        id: ver
+        shell: pwsh
+        run: |
+          $line = Select-String -Path pubspec.yaml -Pattern '^version:' | Select-Object -First 1
+          $v = ($line.Line -split ':', 2)[1].Trim()
+          $short = ($v -split '\+')[0]
+          "full=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "short=$short" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "version: $v  ->  $short"
+
+      # App 显示的版本号是 lib/foundation/app.dart 里的常量，不是读 pubspec。
+      # 与 build-apk.yml 保持一致：编译前强制对齐，改不到就直接失败。
+      - name: Sync version into app.dart
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.short }}"
+          Write-Host "把 app.dart 里的版本对齐到 $v"
+          $path = 'lib/foundation/app.dart'
+          $content = Get-Content $path -Raw
+          $content = $content -replace 'final version = "[^"]*";', "final version = `"$v`";"
+          Set-Content -Path $path -Value $content -NoNewline
+          Select-String -Path $path -Pattern 'final version ='
+          if (-not (Select-String -Path $path -Pattern "final version = `"$v`";")) {
+            Write-Error "app.dart 版本同步失败，找不到 final version 行"
+            exit 1
+          }
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          architecture: x64
+
+      # rhttp / flutter_qjs 通过 Rust 构建。rust-toolchain.toml 里只列了
+      # apple 与 android 的 target，没列 windows，所以这里显式补上。
+      - name: Add Windows rust target
+        shell: pwsh
+        run: |
+          rustup show
+          $channel = 'stable'
+          $match = Select-String -Path rust-toolchain.toml -Pattern 'channel\s*=\s*"([^"]+)"'
+          if ($match) { $channel = $match.Matches[0].Groups[1].Value }
+          Write-Host "使用 rust 工具链: $channel"
+          rustup target add x86_64-pc-windows-msvc --toolchain $channel
+          rustup target list --installed --toolchain $channel
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      # build.py 还会调 iscc 打安装包，但 CI 里没有 Inno Setup，
+      # 这里只产出可直接解压运行的绿色版 zip，够用了。
+      - name: Package portable zip
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.short }}"
+          $src = 'build/windows/x64/runner/Release'
+          if (-not (Test-Path $src)) {
+            Write-Error "找不到构建产物目录 $src"
+            exit 1
+          }
+          $out = "Venera-$v-windows-x64.zip"
+          Compress-Archive -Path "$src/*" -DestinationPath "build/$out" -Force
+          Get-Item "build/$out" | Format-List Name, Length
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: venera-windows
+          path: build/Venera-*-windows-x64.zip
+          if-no-files-found: error
+
+      # 只在 master 上发 Release，且与 APK 用同一套 tag，
+      # 这样一次 Release 里既有 APK 也有 Windows 包。
+      - name: Publish release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "v${{ steps.ver.outputs.short }}"
+          Write-Host "发布 $tag（追加 Windows 包）"
+          $zip = "build/Venera-${{ steps.ver.outputs.short }}-windows-x64.zip"
+          # Release 可能已被 APK 流程创建，追加资产而不是重建
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $zip --clobber
+          } else {
+            gh release create $tag $zip --title "venera-M ${{ steps.ver.outputs.short }}" --notes "Windows 构建，来源 commit ${{ github.sha }}"
+          }
