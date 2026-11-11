@@ -128,7 +128,17 @@ class DataSync with ChangeNotifier {
       );
 
       try {
-        appdata.settings['dataVersion']++;
+        // 先列云端目录，取「云端最大版本号」与「本地版本号」的较大值再 +1。
+        // 这样两台设备各自自增也不会撞号，文件名能真实反映谁更新。
+        var files = await client.readDir('/');
+        files = files.where((e) => e.name!.endsWith('.venera')).toList();
+        var remoteMax = _maxVersionInFiles(files);
+        var localVersion = appdata.settings['dataVersion'];
+        var baseVersion = localVersion is int ? localVersion : 0;
+        if (remoteMax > baseVersion) {
+          baseVersion = remoteMax;
+        }
+        appdata.settings['dataVersion'] = baseVersion + 1;
         await appdata.saveData(false);
         var data = await exportAppData(
             appdata.settings['disableSyncFields'].toString().isNotEmpty
@@ -139,8 +149,6 @@ class DataSync with ChangeNotifier {
         filename += '-';
         filename += appdata.settings['dataVersion'].toString();
         filename += '.venera';
-        var files = await client.readDir('/');
-        files = files.where((e) => e.name!.endsWith('.venera')).toList();
         var old = files.firstWhereOrNull((e) => e.name!.startsWith("$time-"));
         if (old != null) {
           await client.remove(old.name!);
@@ -233,5 +241,31 @@ class DataSync with ChangeNotifier {
       _isDownloading = false;
       notifyListeners();
     }
+  }
+
+  /// 从云端文件名里取最大的版本号。
+  ///
+  /// 文件名格式是 `<天数>-<版本号>.venera`，例如 `20431-42.venera`。
+  /// 参数用 `dynamic` 接收，因为 webdav_client 的目录项类型在本文件里
+  /// 与 dart:io 的 File 同名（已在 import 处 hide），不写死类型更稳。
+  /// 解析不出来的一律忽略，不会抛异常。
+  static int _maxVersionInFiles(List<dynamic> files) {
+    var maxVersion = 0;
+    for (var file in files) {
+      var name = file.name;
+      if (name is! String) {
+        continue;
+      }
+      var parts = name.split('-');
+      if (parts.length < 2) {
+        continue;
+      }
+      var versionPart = parts[1].split('.').first;
+      var version = int.tryParse(versionPart);
+      if (version != null && version > maxVersion) {
+        maxVersion = version;
+      }
+    }
+    return maxVersion;
   }
 }
