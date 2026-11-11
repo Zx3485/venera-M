@@ -5,6 +5,15 @@ on:
   push:
     # 推任意分支都编译，方便在特性分支上试改；但只有 master 才发 Release
     branches: ['**']
+    # 只在这些路径变动时才编译，避免改了文档或 windows/ 也白跑 16 分钟。
+    # 注意：lib/** 覆盖全部 Dart 代码，android/** 覆盖原生层与签名配置。
+    paths:
+      - 'lib/**'
+      - 'android/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/build-apk.yml'
 
 # 发 Release 需要写权限
 permissions:
