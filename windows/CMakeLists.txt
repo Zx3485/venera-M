@@ -32,6 +32,12 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# VS 2026（MSVC 14.5x）把 <experimental/coroutine> 等老实验头文件改成了
+# 硬错误 C2338，而 flutter_inappwebview_windows 与 local_auth_windows 仍在
+# 使用它们。加这个宏让编译器降级为警告，否则 Windows 版无法编译。
+# 上游插件改用 C++20 的 <coroutine> 之后即可删除。
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
