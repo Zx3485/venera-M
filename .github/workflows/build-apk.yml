@@ -82,6 +82,36 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get
 
+      # 编译前先跑静态分析，拦住「少传必填参数」「类型不匹配」这类语义错误。
+      # 之前踩过一次：showToast 漏了 required 的 context，我本地只查了括号
+      # 平衡（全绿），结果 CI 编译到 4 分钟才炸。analyze 几秒就能报出来。
+      #
+      # 只拦 error：
+      #   - info 级本来就不判失败
+      #   - 用 grep 过滤掉 "info •" 与 "warning •" 开头的行后再判断
+      #     （不依赖命令行参数，任何 Flutter 版本都能用）
+      #   - 上游 venera 存量代码有大量 unused_import / deprecated 提示，
+      #     若让它们判失败，门禁会恒红失去意义
+      #
+      # 输出会打印全部诊断，但只有含 "error •" 的行才让 CI 失败。
+      - name: Analyze
+        shell: bash
+        run: |
+          set +e
+          # analyze 自身失败不一定代表有 error（也可能有 warning），
+          # 所以这里不直接用它退出码，而是解析输出。
+          flutter analyze 2>&1 | tee /tmp/analyze.log
+          # grep -c 在无匹配时返回 1，会把脚本带崩，用 || true 兜住；
+          # 输出为空时 $(...) 可能为空串，补成 0。
+          ERRORS=$(grep -c "error •" /tmp/analyze.log)
+          ERRORS=${ERRORS:-0}
+          echo "---- error 级诊断数: $ERRORS ----"
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::flutter analyze 发现 $ERRORS 个 error，详见上方日志"
+            exit 1
+          fi
+          echo "分析通过（无 error）"
+
       - name: Build release APK
         run: flutter build apk --release
 

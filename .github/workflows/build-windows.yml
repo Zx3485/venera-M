@@ -71,6 +71,21 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get
 
+      # 与 build-apk.yml 保持一致：编译前先跑静态分析，只拦 error。
+      # 详细说明见 build-apk.yml 里同名步骤的注释。
+      - name: Analyze
+        shell: pwsh
+        run: |
+          $out = flutter analyze 2>&1 | Out-String
+          Write-Host $out
+          $errors = ([regex]::Matches($out, 'error •')).Count
+          Write-Host "---- error 级诊断数: $errors ----"
+          if ($errors -gt 0) {
+            Write-Error "flutter analyze 发现 $errors 个 error"
+            exit 1
+          }
+          Write-Host "分析通过（无 error）"
+
       - name: Build Windows release
         run: flutter build windows --release
 
