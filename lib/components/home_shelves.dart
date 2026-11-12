@@ -289,7 +289,13 @@ class _MenuButton extends StatelessWidget {
                   // rename 在「名字已存在」和「名字含双引号」时会抛异常。
                   // 之前这里是空 catch，用户只看到对话框关掉、名字没变，
                   // 完全不知道发生了什么。现在给出具体原因。
+                  //
+                  // 先关弹窗再用 rootContext 弹 toast：dialogContext 在 pop 之后
+                  // 就失效了，而 showToast 要靠 findAncestorStateOfType 找
+                  // OverlayWidgetState，用根 context 更可靠。
+                  Navigator.pop(dialogContext);
                   showToast(
+                    context: App.rootContext,
                     message: "Rename failed: $e".tl,
                   );
                 }
