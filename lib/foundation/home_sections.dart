@@ -1,31 +1,9 @@
 import 'package:venera/foundation/appdata.dart';
+import 'package:venera/foundation/home_section_defs.dart';
 
-/// 主页可用板块的键，数组顺序即默认显示顺序。
-///
-/// 想加新板块时：在这里加一个键，在 [kHomeSectionNames] 加显示名，
-/// 再到 `home_page.dart` 的 `buildHomeSection` 里补一条 `switch` 分支即可。
-const kHomeSections = <String>[
-  'search',
-  'sync',
-  'history',
-  'local',
-  'followUpdates',
-  'comicSource',
-  'imageFavorites',
-  'shelves',
-];
-
-/// 板块键 → 显示名（英文原文，调用处用 `.tl` 翻译）。
-const kHomeSectionNames = <String, String>{
-  'search': 'Search Bar',
-  'sync': 'Sync Data',
-  'history': 'History',
-  'local': 'Local',
-  'followUpdates': 'Follow Updates',
-  'comicSource': 'Comic Source',
-  'imageFavorites': 'Image Favorites',
-  'shelves': 'Shelves',
-};
+// 常量与纯函数在 home_section_defs.dart（不依赖 appdata，避免循环 import）。
+// 这里再导出一次，调用方只 import 本文件即可。
+export 'package:venera/foundation/home_section_defs.dart';
 
 /// 读取当前生效的板块顺序。
 ///
@@ -37,13 +15,12 @@ List<String> currentHomeSections() {
   var value = appdata.settings['homeSections'];
   if (value is! List) {
     // 设置缺失或类型不对，回退默认，避免首页直接空白。
-    return List<String>.from(kHomeSections);
+    return kDefaultHomeSections;
   }
+  var known = kHomeSections;
   var result = <String>[];
   for (var item in value) {
-    if (item is String &&
-        kHomeSections.contains(item) &&
-        !result.contains(item)) {
+    if (item is String && known.contains(item) && !result.contains(item)) {
       result.add(item);
     }
   }

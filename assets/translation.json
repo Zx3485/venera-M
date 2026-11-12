@@ -462,7 +462,8 @@
     "No folders in Favorites yet. Create a folder in Favorites first.": "收藏夹里还没有文件夹，请先在收藏夹里新建一个。",
     "All folders are already on the shelves.": "所有文件夹都已经在书架上了。",
     "OK": "确定",
-    "@c comics": "@c 本漫画"
+    "@c comics": "@c 本漫画",
+    "Rename failed: $e": "重命名失败：$e"
   },
   "zh_TW": {
     "Home": "首頁",
@@ -927,6 +928,7 @@
     "No folders in Favorites yet. Create a folder in Favorites first.": "收藏夾裡還沒有資料夾，請先在收藏夾裡新建一個。",
     "All folders are already on the shelves.": "所有資料夾都已經在書架上了。",
     "OK": "確定",
-    "@c comics": "@c 本漫畫"
+    "@c comics": "@c 本漫畫",
+    "Rename failed: $e": "重新命名失敗：$e"
   }
 }

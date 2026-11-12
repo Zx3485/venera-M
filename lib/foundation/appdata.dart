@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:venera/foundation/app.dart';
+// 只引用常量（kDefaultHomeSections），这个文件本身不 import 任何东西，
+// 所以不会和 home_sections.dart 形成循环依赖。
+import 'package:venera/foundation/home_section_defs.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/utils/data_sync.dart';
 import 'package:venera/utils/init.dart';
@@ -252,16 +255,9 @@ class Settings with ChangeNotifier {
     'showChapterCommentsAtEnd':
         false, // show chapter comments at end of chapter
     // 主页板块顺序。列表里没有的板块就不显示，顺序即从上到下的排列。
-    // 可用的键见 foundation/home_sections.dart 的 kHomeSections。
-    'homeSections': <String>[
-      'search',
-      'sync',
-      'history',
-      'local',
-      'followUpdates',
-      'comicSource',
-      'imageFavorites',
-    ],
+    // 默认值由 foundation/home_sections.dart 的 kDefaultHomeSections 提供，
+    // 那里是唯一定义处，避免两处列表不同步（书架曾因此默认不显示）。
+    'homeSections': kDefaultHomeSections,
     // 主页「书架」引用哪些收藏夹文件夹，以及摆放顺序。
     // 书架不另存漫画，只是引用收藏夹里已存在的文件夹。
     'homeShelves': <String>[],

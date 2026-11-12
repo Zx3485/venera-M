@@ -73,19 +73,46 @@ class _ShelfCard extends StatefulWidget {
 class _ShelfCardState extends State<_ShelfCard> {
   List<FavoriteItem>? _comics;
 
+  /// 上次加载时该文件夹的漫画数。
+  ///
+  /// 收藏夹里增删漫画后，父级 _HomeShelvesState 会 setState 重建，
+  /// 但 State 被复用、initState 不会重跑。这里比对计数来决定要不要重载，
+  /// 既能让书架及时刷新，又不至于每次 build 都查一遍 SQLite。
+  int _loadedCount = -1;
+
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant _ShelfCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 书架被拖到别的文件夹（理论上不会，但改了设置就可能）时也要重载。
+    if (oldWidget.folder != widget.folder) {
+      _loadedCount = -1;
+      _load();
+      return;
+    }
+    // 计数变了说明书架内容有增删，重载一次。
+    var manager = LocalFavoritesManager();
+    var count =
+        manager.existsFolder(widget.folder) ? manager.folderComics(widget.folder) : 0;
+    if (count != _loadedCount) {
+      _load();
+    }
+  }
+
   void _load() {
     var manager = LocalFavoritesManager();
     if (!manager.existsFolder(widget.folder)) {
+      _loadedCount = 0;
       _comics = [];
       return;
     }
     var count = manager.folderComics(widget.folder);
+    _loadedCount = count;
     if (count >= 500) {
       manager.getFolderComicsAsync(widget.folder).then((value) {
         if (mounted) {
@@ -242,24 +269,30 @@ class _MenuButton extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 var newName = controller.text.trim();
-                if (newName.isNotEmpty && newName != folder) {
-                  try {
-                    LocalFavoritesManager().rename(folder, newName);
-                    // 书架引用的是文件夹名，改名后要同步更新引用，
-                    // 否则这个书架会指向一个不存在的文件夹。
-                    var shelves = currentHomeShelves();
-                    var i = shelves.indexOf(folder);
-                    if (i >= 0) {
-                      shelves[i] = newName;
-                      saveHomeShelves(shelves);
-                    }
-                    onChanged();
-                  } catch (e) {
-                    // rename 在重名或名字含引号时会抛异常，
-                    // 忽略即可，界面保持原名。
-                  }
+                if (newName.isEmpty || newName == folder) {
+                  Navigator.pop(dialogContext);
+                  return;
                 }
-                Navigator.pop(dialogContext);
+                try {
+                  LocalFavoritesManager().rename(folder, newName);
+                  // 书架引用的是文件夹名，改名后要同步更新引用，
+                  // 否则这个书架会指向一个不存在的文件夹。
+                  var shelves = currentHomeShelves();
+                  var i = shelves.indexOf(folder);
+                  if (i >= 0) {
+                    shelves[i] = newName;
+                    saveHomeShelves(shelves);
+                  }
+                  onChanged();
+                  Navigator.pop(dialogContext);
+                } catch (e) {
+                  // rename 在「名字已存在」和「名字含双引号」时会抛异常。
+                  // 之前这里是空 catch，用户只看到对话框关掉、名字没变，
+                  // 完全不知道发生了什么。现在给出具体原因。
+                  showToast(
+                    message: "Rename failed: $e".tl,
+                  );
+                }
               },
               child: Text("OK".tl),
             ),
