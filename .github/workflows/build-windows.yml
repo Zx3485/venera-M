@@ -73,13 +73,22 @@ jobs:
 
       # 与 build-apk.yml 保持一致：编译前先跑静态分析，只拦 error。
       # 详细说明见 build-apk.yml 里同名步骤的注释。
+      #
+      # ⚠ pwsh 专属坑：GitHub Actions 的 pwsh 默认 $ErrorActionPreference = 'Stop'，
+      # 而 flutter analyze 有 warning 时会往 stderr 写内容。下面用 2>&1 合并流时，
+      # PowerShell 会把 stderr 当成 NativeCommandError 抛出并终止脚本 ——
+      # 表现为还没跑到 build 就红叉（第一次就是这么挂的）。
+      # 所以先显式设成 Continue，让外部命令的 stderr 不要中断脚本，
+      # 后面单纯靠 $LASTEXITCODE / 正则计数来判断。
       - name: Analyze
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Continue'
           $out = flutter analyze 2>&1 | Out-String
+          $code = $LASTEXITCODE
           Write-Host $out
           $errors = ([regex]::Matches($out, 'error •')).Count
-          Write-Host "---- error 级诊断数: $errors ----"
+          Write-Host "---- error 级诊断数: $errors （analyze 退出码 $code）----"
           if ($errors -gt 0) {
             Write-Error "flutter analyze 发现 $errors 个 error"
             exit 1
