@@ -111,6 +111,9 @@ jobs:
             exit 1
           fi
           echo "分析通过（无 error）"
+          # 显式 exit 0：与 build-windows.yml 的 pwsh 版本保持一致，
+          # 让退出码由本脚本决定，而不是由最后一条命令的退出码决定。
+          exit 0
 
       - name: Build release APK
         run: flutter build apk --release

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:venera/components/components.dart';
+// app.dart re-exports foundation/context.dart，context.to / context.colorScheme
+// 这些扩展从这里就能拿到，不必再单独 import context.dart（analyze 会报
+// unnecessary_import）。
 import 'package:venera/foundation/app.dart';
 import 'package:venera/foundation/appdata.dart';
-// context.to / context.colorScheme 来自 foundation/context.dart 的扩展，必须显式导入。
-import 'package:venera/foundation/context.dart';
 import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/home_shelves.dart';
 import 'package:venera/pages/comic_details_page/comic_page.dart';

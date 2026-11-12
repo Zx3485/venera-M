@@ -258,11 +258,11 @@ class _HomeSectionsEditorState extends State<_HomeSectionsEditor> {
 
   void showAddDialog() {
     var canAdd = <String, String>{};
-    kHomeSections.forEach((key) {
+    for (final key in kHomeSections) {
       if (!keys.contains(key)) {
         canAdd[key] = (kHomeSectionNames[key] ?? key).tl;
       }
-    });
+    }
 
     var selected = <String>[];
 
