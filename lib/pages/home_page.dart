@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera/components/components.dart';
+import 'package:venera/components/home_shelves.dart';
 import 'package:venera/foundation/app.dart';
+import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/consts.dart';
 import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/history.dart';
+import 'package:venera/foundation/home_sections.dart';
 import 'package:venera/foundation/local.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/pages/comic_details_page/comic_page.dart';
@@ -23,25 +26,106 @@ import 'package:venera/utils/translations.dart';
 
 import 'local_comics_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // 设置页改完板块顺序/开关后，回到首页要立刻反映出来。
+    // appdata.settings 是 ChangeNotifier，设置项赋值时会 notifyListeners。
+    appdata.settings.addListener(onSettingsChanged);
+  }
+
+  @override
+  void dispose() {
+    appdata.settings.removeListener(onSettingsChanged);
+    super.dispose();
+  }
+
+  void onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// 按设置里的顺序把板块渲染成 sliver。
+  Widget buildSection(String key) {
+    return switch (key) {
+      'search' => const _SearchBar(),
+      'sync' => const _SyncDataWidget(),
+      'history' => const _History(),
+      'local' => const _Local(),
+      'followUpdates' => const FollowUpdatesWidget(),
+      'comicSource' => const _ComicSourceWidget(),
+      'imageFavorites' => const ImageFavorites(),
+      'shelves' => const HomeShelves(),
+      // 设置里存了旧版本遗留的未知键，直接跳过，不让首页崩。
+      _ => const SliverToBoxAdapter(child: SizedBox()),
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
+    var sections = currentHomeSections();
     var widget = SmoothCustomScrollView(
       slivers: [
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
-        const _SearchBar(),
-        const _SyncDataWidget(),
-        const _History(),
-        const _Local(),
-        const FollowUpdatesWidget(),
-        const _ComicSourceWidget(),
-        const ImageFavorites(),
+        if (sections.isEmpty)
+          const SliverToBoxAdapter(child: _EmptyHomeHint())
+        else
+          ...sections.map(buildSection),
         SliverPadding(padding: EdgeInsets.only(top: context.padding.bottom)),
       ],
     );
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
+  }
+}
+
+/// 用户把所有板块都关掉时给个提示，否则首页会是一片空白，
+/// 让人误以为是加载失败。
+class _EmptyHomeHint extends StatelessWidget {
+  const _EmptyHomeHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 0.6,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.dashboard_customize_outlined,
+            size: 40,
+            color: context.colorScheme.outline,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "No sections on the home page".tl,
+            style: ts.s16,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Turn some on in Settings - Appearance - Home Page Sections.".tl,
+            style: ts.s12,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }
 

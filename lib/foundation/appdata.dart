@@ -251,6 +251,20 @@ class Settings with ChangeNotifier {
     'showChapterComments': true, // show chapter comments in reader
     'showChapterCommentsAtEnd':
         false, // show chapter comments at end of chapter
+    // 主页板块顺序。列表里没有的板块就不显示，顺序即从上到下的排列。
+    // 可用的键见 foundation/home_sections.dart 的 kHomeSections。
+    'homeSections': <String>[
+      'search',
+      'sync',
+      'history',
+      'local',
+      'followUpdates',
+      'comicSource',
+      'imageFavorites',
+    ],
+    // 主页「书架」引用哪些收藏夹文件夹，以及摆放顺序。
+    // 书架不另存漫画，只是引用收藏夹里已存在的文件夹。
+    'homeShelves': <String>[],
   };
 
   operator [](String key) {

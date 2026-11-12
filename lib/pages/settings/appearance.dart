@@ -69,6 +69,17 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           },
         ).toSliver(),
 
+        // ───────────────── 主页板块 ─────────────────
+        _SettingPartTitle(title: "Home Page".tl, icon: Icons.dashboard_customize),
+        _PopupWindowSetting(
+          title: "Home Page Sections".tl,
+          builder: () => const _HomeSectionsEditor(),
+        ).toSliver(),
+        _PopupWindowSetting(
+          title: "Shelves".tl,
+          builder: () => const _ShelvesEditor(),
+        ).toSliver(),
+
         // ───────────────── 磨砂玻璃 ─────────────────
         _SettingPartTitle(title: "Glass Effect".tl, icon: Icons.blur_on),
         _SwitchSetting(
@@ -118,5 +129,454 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         ],
       ],
     );
+  }
+}
+
+/// 主页板块编辑器：拖拽排序 + 勾选增删。
+///
+/// 和 explore_settings 里那些「页面筛选」交互一致，只是这里的条目是
+/// 固定的主页板块，不是图源提供的动态页面。
+class _HomeSectionsEditor extends StatefulWidget {
+  const _HomeSectionsEditor();
+
+  @override
+  State<_HomeSectionsEditor> createState() => _HomeSectionsEditorState();
+}
+
+class _HomeSectionsEditorState extends State<_HomeSectionsEditor> {
+  /// 当前排好的板块键，顺序即显示顺序。
+  late List<String> keys;
+
+  var reorderWidgetKey = UniqueKey();
+
+  var scrollController = ScrollController();
+
+  @override
+  void initState() {
+    keys = currentHomeSections();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var tiles = keys.map(buildItem).toList();
+
+    Widget body = keys.isEmpty
+        ? ListView(
+            controller: scrollController,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  "All sections are hidden. Tap Add in the top right to turn some on."
+                      .tl,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          )
+        : ReorderableBuilder<String>(
+            key: reorderWidgetKey,
+            scrollController: scrollController,
+            longPressDelay: App.isDesktop
+                ? const Duration(milliseconds: 100)
+                : const Duration(milliseconds: 500),
+            dragChildBoxDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            onReorder: (reorderFunc) {
+              setState(() {
+                keys = List.from(reorderFunc(keys));
+              });
+              save();
+            },
+            children: tiles,
+            builder: (children) {
+              return GridView(
+                controller: scrollController,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1,
+                  mainAxisExtent: 48,
+                ),
+                children: children,
+              );
+            },
+          );
+
+    return PopUpWidgetScaffold(
+      title: "Home Page Sections".tl,
+      tailing: [
+        if (keys.length < kHomeSections.length)
+          TextButton.icon(
+            label: Text("Add".tl),
+            icon: const Icon(Icons.add),
+            onPressed: showAddDialog,
+          ),
+      ],
+      body: body,
+    );
+  }
+
+  Widget buildItem(String key) {
+    var removeButton = Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: IconButton(
+        tooltip: "Remove".tl,
+        onPressed: () {
+          setState(() {
+            keys.remove(key);
+          });
+          save();
+        },
+        icon: const Icon(Icons.delete_outline),
+      ),
+    );
+
+    return ListTile(
+      key: Key(key),
+      title: Text((kHomeSectionNames[key] ?? key).tl),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [removeButton, const Icon(Icons.drag_handle)],
+      ),
+    );
+  }
+
+  void showAddDialog() {
+    var canAdd = <String, String>{};
+    kHomeSections.forEach((key) {
+      if (!keys.contains(key)) {
+        canAdd[key] = (kHomeSectionNames[key] ?? key).tl;
+      }
+    });
+
+    var selected = <String>[];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return ContentDialog(
+              title: "Add".tl,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: canAdd.entries
+                    .map(
+                      (e) => CheckboxListTile(
+                        value: selected.contains(e.key),
+                        title: Text(e.value),
+                        key: Key(e.key),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value!) {
+                              selected.add(e.key);
+                            } else {
+                              selected.remove(e.key);
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+              actions: [
+                if (selected.length < canAdd.length)
+                  TextButton(
+                    child: Text("Select All".tl),
+                    onPressed: () {
+                      setDialogState(() {
+                        selected = canAdd.keys.toList();
+                      });
+                    },
+                  )
+                else
+                  TextButton(
+                    child: Text("Deselect All".tl),
+                    onPressed: () {
+                      setDialogState(() {
+                        selected.clear();
+                      });
+                    },
+                  ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: selected.isNotEmpty
+                      ? () {
+                          setState(() {
+                            // 按 kHomeSections 的默认顺序追加，
+                            // 避免勾选顺序不同导致首页排列随机。
+                            for (var key in kHomeSections) {
+                              if (selected.contains(key) && !keys.contains(key)) {
+                                keys.add(key);
+                              }
+                            }
+                          });
+                          save();
+                          Navigator.pop(context);
+                        }
+                      : null,
+                  child: Text("Add".tl),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void save() {
+    appdata.settings['homeSections'] = List<String>.from(keys);
+    appdata.saveData();
+  }
+}
+
+/// 书架管理：挑选哪些收藏夹文件夹显示在主页书架上，并调整顺序。
+class _ShelvesEditor extends StatefulWidget {
+  const _ShelvesEditor();
+
+  @override
+  State<_ShelvesEditor> createState() => _ShelvesEditorState();
+}
+
+class _ShelvesEditorState extends State<_ShelvesEditor> {
+  late List<String> shelves;
+
+  var reorderWidgetKey = UniqueKey();
+
+  var scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    shelves = currentHomeShelves();
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var manager = LocalFavoritesManager();
+    var folders = manager.folderNames;
+    var tiles = shelves.map(buildItem).toList();
+
+    Widget body;
+    if (folders.isEmpty) {
+      body = ListView(
+        controller: scrollController,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              "No folders in Favorites yet. Create a folder in Favorites first."
+                  .tl,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      );
+    } else if (shelves.isEmpty) {
+      body = ListView(
+        controller: scrollController,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              "No shelves yet. Tap Add to put a favorites folder on the home page."
+                  .tl,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      );
+    } else {
+      body = ReorderableBuilder<String>(
+        key: reorderWidgetKey,
+        scrollController: scrollController,
+        longPressDelay: App.isDesktop
+            ? const Duration(milliseconds: 100)
+            : const Duration(milliseconds: 500),
+        dragChildBoxDecoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 5,
+              offset: Offset(0, 2),
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        onReorder: (reorderFunc) {
+          setState(() {
+            shelves = List.from(reorderFunc(shelves));
+          });
+          save();
+        },
+        children: tiles,
+        builder: (children) {
+          return GridView(
+            controller: scrollController,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 1,
+              mainAxisExtent: 56,
+            ),
+            children: children,
+          );
+        },
+      );
+    }
+
+    return PopUpWidgetScaffold(
+      title: "Shelves".tl,
+      tailing: [
+        if (shelves.length < folders.length)
+          TextButton.icon(
+            label: Text("Add".tl),
+            icon: const Icon(Icons.add),
+            onPressed: showAddDialog,
+          ),
+      ],
+      body: body,
+    );
+  }
+
+  Widget buildItem(String folder) {
+    return ListTile(
+      key: Key(folder),
+      title: Text(folder),
+      subtitle: Text(
+        "@c comics".tlParams({'c': LocalFavoritesManager().folderComics(folder)}),
+        style: ts.s12,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: "Remove".tl,
+            onPressed: () {
+              setState(() {
+                shelves.remove(folder);
+              });
+              save();
+            },
+            icon: const Icon(Icons.delete_outline),
+          ),
+          const Icon(Icons.drag_handle),
+        ],
+      ),
+    );
+  }
+
+  void showAddDialog() {
+    var manager = LocalFavoritesManager();
+    var canAdd = manager.folderNames
+        .where((f) => !shelves.contains(f))
+        .toList();
+    if (canAdd.isEmpty) {
+      return;
+    }
+    var selected = <String>[];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return ContentDialog(
+              title: "Add".tl,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: canAdd
+                    .map(
+                      (folder) => CheckboxListTile(
+                        value: selected.contains(folder),
+                        title: Text(folder),
+                        subtitle: Text(
+                          "@c comics".tlParams({
+                            'c': manager.folderComics(folder),
+                          }),
+                          style: ts.s12,
+                        ),
+                        key: Key(folder),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value!) {
+                              selected.add(folder);
+                            } else {
+                              selected.remove(folder);
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+              actions: [
+                if (selected.length < canAdd.length)
+                  TextButton(
+                    child: Text("Select All".tl),
+                    onPressed: () {
+                      setDialogState(() {
+                        selected = List.from(canAdd);
+                      });
+                    },
+                  )
+                else
+                  TextButton(
+                    child: Text("Deselect All".tl),
+                    onPressed: () {
+                      setDialogState(() {
+                        selected.clear();
+                      });
+                    },
+                  ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: selected.isNotEmpty
+                      ? () {
+                          setState(() {
+                            for (var folder in canAdd) {
+                              if (selected.contains(folder) &&
+                                  !shelves.contains(folder)) {
+                                shelves.add(folder);
+                              }
+                            }
+                          });
+                          save();
+                          Navigator.pop(context);
+                        }
+                      : null,
+                  child: Text("Add".tl),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void save() {
+    appdata.settings['homeShelves'] = List<String>.from(shelves);
+    appdata.saveData();
   }
 }
