@@ -307,12 +307,12 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
               child: Container(
                 decoration: BoxDecoration(
                   color: context.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: kBRS,
                   boxShadow: [
                     BoxShadow(
-                      color: context.colorScheme.outlineVariant,
-                      blurRadius: 1,
-                      offset: const Offset(0, 1),
+                      color: Colors.black.toOpacity(0.14),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -336,7 +336,15 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SelectableText(comic.title, style: ts.s18),
+                SelectableText(
+                  comic.title,
+                  style: kSerifStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    height: 1.4,
+                  ),
+                ),
                 if (comic.subTitle != null)
                   SelectableText(
                     comic.subTitle!,
@@ -426,20 +434,19 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
           if (isMobile)
             Row(
               children: [
+                // 墨韵：主 CTA 反色块（暗色下纸白、亮色下墨黑），次操作幽灵按钮
                 Expanded(
-                  child: FilledButton.tonal(
+                  child: _InkGhostButton(
+                    text: 'Download'.tl,
                     onPressed: download,
-                    child: Text("Download".tl),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: hasHistory
-                      ? FilledButton(
-                          onPressed: continueRead,
-                          child: Text("Continue".tl),
-                        )
-                      : FilledButton(onPressed: read, child: Text("Read".tl)),
+                  child: _InkCtaButton(
+                    text: (hasHistory ? 'Continue' : 'Read').tl,
+                    onPressed: hasHistory ? continueRead : read,
+                  ),
                 ),
               ],
             ).paddingHorizontal(16).paddingVertical(8),
@@ -1061,6 +1068,74 @@ class _ComicPageLoadingPlaceHolder extends StatelessWidget {
         width: 144 * 0.72,
         clipBehavior: Clip.antiAlias,
         child: child,
+      ),
+    );
+  }
+}
+
+/// 墨韵主 CTA：反色实心块 —— 暗色模式下纸白底墨黑字，亮色下相反。
+/// 整页唯一的强对比元素，替代 M3 FilledButton 的彩色药丸。
+class _InkCtaButton extends StatelessWidget {
+  const _InkCtaButton({required this.text, required this.onPressed});
+
+  final String text;
+  final void Function() onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        height: 48,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: context.colorScheme.onSurface,
+          borderRadius: BorderRadius.circular(kRadiusXs),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: context.colorScheme.surface,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 墨韵次操作：hairline 描边幽灵按钮。
+class _InkGhostButton extends StatelessWidget {
+  const _InkGhostButton({required this.text, required this.onPressed});
+
+  final String text;
+  final void Function() onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        height: 48,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: context.colorScheme.outlineVariant.withValues(alpha: 0.6),
+            width: kBorderHairline,
+          ),
+          borderRadius: BorderRadius.circular(kRadiusXs),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: context.colorScheme.onSurfaceVariant,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1,
+          ),
+        ),
       ),
     );
   }

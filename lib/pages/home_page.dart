@@ -9,6 +9,7 @@ import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/consts.dart';
 import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/history.dart';
+import 'package:venera/foundation/image_provider/history_image_provider.dart';
 import 'package:venera/foundation/home_sections.dart';
 import 'package:venera/foundation/local.dart';
 import 'package:venera/foundation/log.dart';
@@ -76,6 +77,7 @@ class _HomePageState extends State<HomePage> {
     var widget = SmoothCustomScrollView(
       slivers: [
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
+        const SliverToBoxAdapter(child: _GreetHeader()),
         if (sections.isEmpty)
           const SliverToBoxAdapter(child: _EmptyHomeHint())
         else
@@ -137,25 +139,32 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 墨韵：下划线式搜索条，不再是胶囊
+    var dim = context.colorScheme.onSurfaceVariant;
     return SliverToBoxAdapter(
       child: Container(
-        height: App.isMobile ? 52 : 46,
+        height: 48,
         width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Material(
-          color: context.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(32),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(32),
-            onTap: () {
-              context.to(() => const SearchPage());
-            },
+        margin: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+        child: InkWell(
+          onTap: () {
+            context.to(() => const SearchPage());
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: context.colorScheme.outlineVariant.withValues(alpha: 0.55),
+                  width: 1,
+                ),
+              ),
+            ),
             child: Row(
               children: [
-                const SizedBox(width: 16),
-                const Icon(Icons.search),
-                const SizedBox(width: 8),
-                Text('Search'.tl, style: ts.s16),
+                const SizedBox(width: 4),
+                Icon(Icons.search, size: 20, color: dim),
+                const SizedBox(width: 10),
+                Text('Search'.tl, style: TextStyle(fontSize: 14, color: dim)),
                 const Spacer(),
               ],
             ),
@@ -342,81 +351,191 @@ class _HistoryState extends State<_History> {
 
   @override
   Widget build(BuildContext context) {
+    final dim = context.colorScheme.onSurfaceVariant;
     return SliverToBoxAdapter(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerLow
-              .withValues(alpha: 0.55),
-          border: Border.all(
-            color: Theme.of(context)
-                .colorScheme
-                .outlineVariant
-                .withValues(alpha: 0.5),
-            width: kBorderHairline,
-          ),
-          borderRadius: kBRS,
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            context.to(() => const HistoryPage());
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 56,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () => context.to(() => const HistoryPage()),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
                   children: [
-                    Center(
-                      child: Text('History'.tl, style: ts.s18),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                    Text(
+                      'History'.tl,
+                      style: const TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
                       ),
-                      child: Text(count.toString(), style: ts.s12),
                     ),
+                    const SizedBox(width: 6),
+                    Text('· $count',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: dim,
+                            fontWeight: FontWeight.w600)),
                     const Spacer(),
-                    const Icon(Icons.arrow_right),
+                    Text('View more'.tl,
+                        style: TextStyle(fontSize: 11, color: dim)),
                   ],
                 ),
-              ).paddingHorizontal(16),
-              if (history.isNotEmpty)
-                SizedBox(
-                  height: 136,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: history.length,
-                    itemBuilder: (context, index) {
-                      final heroID = history[index].id.hashCode;
-                      return SimpleComicTile(
-                        comic: history[index],
-                        heroID: heroID,
-                        onTap: () {
-                          context.to(
-                            () => ComicPage(
-                              id: history[index].id,
-                              sourceKey: history[index].type.sourceKey,
-                              cover: history[index].cover,
-                              title: history[index].title,
-                              heroID: heroID,
-                            ),
-                          );
-                        },
-                      ).paddingHorizontal(8).paddingVertical(2);
-                    },
-                  ),
-                ).paddingHorizontal(8).paddingBottom(16),
-            ],
+              ),
+            ),
+            for (var h in history.take(5)) _buildRow(context, h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRow(BuildContext context, History h) {
+    final dim = context.colorScheme.onSurfaceVariant;
+    final maxPage = h.maxPage ?? 0;
+    final progress = maxPage > 0 ? (h.page / maxPage).clamp(0.0, 1.0) : 0.0;
+    final sub = h.ep > 1 ? "E${h.ep} · P${h.page}" : "P${h.page}";
+    final heroID = h.id.hashCode;
+    Widget cover = Container(
+      width: 44,
+      height: 60,
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: AnimatedImage(
+        image: HistoryImageProvider(h),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      ),
+    );
+    return InkWell(
+      onTap: () {
+        context.to(
+          () => ComicPage(
+            id: h.id,
+            sourceKey: h.type.sourceKey,
+            cover: h.cover,
+            title: h.title,
+            heroID: heroID,
           ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        child: Row(
+          children: [
+            Hero(tag: "cover$heroID", child: cover),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    h.title.replaceAll('\n', ''),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13.5, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(sub,
+                      style: TextStyle(fontSize: 10.5, color: dim)),
+                  const SizedBox(height: 9),
+                  // 细进度线：墨韵的阅读进度表达
+                  Container(
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.outlineVariant
+                          .withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                    child: FractionallySizedBox(
+                      widthFactor: progress,
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: context.colorScheme.onSurface,
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text('${(progress * 100).round()}%',
+                style: TextStyle(
+                    fontSize: 10,
+                    color: dim,
+                    fontFeatures: const [FontFeature.tabularFigures()])),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 墨韵问候头：日期（朱砂点）+ 衬线大字问候
+class _GreetHeader extends StatelessWidget {
+  const _GreetHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    var now = DateTime.now();
+    var hi = now.hour < 5
+        ? 'Late night reading'.tl
+        : now.hour < 11
+            ? 'Good morning'.tl
+            : now.hour < 14
+                ? 'Good noon'.tl
+                : now.hour < 18
+                    ? 'Good afternoon'.tl
+                    : 'Good evening'.tl;
+    const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: kSealColor(context),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "${now.month}.${now.day} ${weekdays[now.weekday - 1].tl}",
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: context.colorScheme.onSurfaceVariant,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              hi,
+              style: kSerifStyle(
+                fontSize: 27,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -460,20 +579,7 @@ class _LocalState extends State<_Local> {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerLow
-              .withValues(alpha: 0.55),
-          border: Border.all(
-            color: Theme.of(context)
-                .colorScheme
-                .outlineVariant
-                .withValues(alpha: 0.5),
-            width: kBorderHairline,
-          ),
-          borderRadius: kBRS,
-        ),
+        
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
@@ -487,20 +593,13 @@ class _LocalState extends State<_Local> {
                 child: Row(
                   children: [
                     Center(
-                      child: Text('Local'.tl, style: ts.s18),
+                      child: Text('Local'.tl, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                     ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(count.toString(), style: ts.s12),
-                    ),
+                    Text('· $count',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: context.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600)),
                     const Spacer(),
                     const Icon(Icons.arrow_right),
                   ],
@@ -792,20 +891,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerLow
-              .withValues(alpha: 0.55),
-          border: Border.all(
-            color: Theme.of(context)
-                .colorScheme
-                .outlineVariant
-                .withValues(alpha: 0.5),
-            width: kBorderHairline,
-          ),
-          borderRadius: kBRS,
-        ),
+        
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
@@ -819,7 +905,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                 child: Row(
                   children: [
                     Center(
-                      child: Text('Comic Source'.tl, style: ts.s18),
+                      child: Text('Comic Source'.tl, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                     ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -1002,20 +1088,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerLow
-              .withValues(alpha: 0.55),
-          border: Border.all(
-            color: Theme.of(context)
-                .colorScheme
-                .outlineVariant
-                .withValues(alpha: 0.5),
-            width: kBorderHairline,
-          ),
-          borderRadius: kBRS,
-        ),
+        
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
@@ -1031,7 +1104,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
                 child: Row(
                   children: [
                     Center(
-                      child: Text('Image Favorites'.tl, style: ts.s18),
+                      child: Text('Image Favorites'.tl, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                     ),
                     if (hasData)
                       Container(

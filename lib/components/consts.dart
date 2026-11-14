@@ -149,3 +149,50 @@ final MaterialColor kSoftPink = _buildSoftSwatch(0xFFC77E9E);
 
 /// 标签点缀
 final MaterialColor kSoftIndigo = _buildSoftSwatch(0xFF7E86B8);
+
+// ───────────────────────── 墨韵 · Ink ─────────────────────────
+// 「墨韵极简 + 玻璃」设计语言：
+//   版面零卡片、层级靠字重与 hairline 分割线；
+//   玻璃只给浮在内容上方的层（标题栏 / 导航 / 弹层）；
+//   朱砂红仅做极少量的信号色（更新 / 评分 / 阅读位置）。
+
+/// 墨黑底色（暗色模式页面背景）
+const Color kInkDarkBg = Color(0xFF101013);
+
+/// 纸白底色（亮色模式页面背景）
+const Color kInkLightBg = Color(0xFFFAFAF8);
+
+/// 墨灰种子色：生成近乎无彩的 colorScheme
+const Color kInkSeed = Color(0xFF8A8F98);
+
+/// 衬线字体（大标题用，回退到无衬线不影响可用性）
+const String kSerifFontFamily = 'Noto Serif SC';
+const List<String> kSerifFontFallback = [
+  'Noto Serif CJK SC',
+  'Noto Serif CJK',
+  'Source Han Serif SC',
+  'Songti SC',
+  'SimSun',
+];
+
+/// 衬线标题样式
+TextStyle kSerifStyle({
+  double? fontSize,
+  FontWeight? fontWeight,
+  double? letterSpacing,
+  Color? color,
+  double? height,
+}) =>
+    TextStyle(
+      fontFamily: kSerifFontFamily,
+      fontFamilyFallback: kSerifFontFallback,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      letterSpacing: letterSpacing,
+      color: color,
+      height: height,
+    );
+
+/// 朱砂色：唯一的暖色信号（更新点、评分星、阅读位置）
+Color kSealColor(BuildContext context) =>
+    context.isDarkMode ? const Color(0xFFD05A52) : const Color(0xFFB5443C);

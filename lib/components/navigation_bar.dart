@@ -295,34 +295,53 @@ class NaviPaneState extends State<NaviPane>
   }
 
   Widget buildBottom() {
+    final glass = isGlassEnabled;
+    final bar = Container(
+      height: _kBottomBarHeight,
+      decoration: BoxDecoration(
+        color: glass
+            ? Theme.of(context).colorScheme.surface.toOpacity(0.5)
+            : null,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: glass ? 0.35 : 1),
+            width: glass ? kBorderHairline : 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: List<Widget>.generate(widget.paneItems.length, (index) {
+          return Expanded(
+            child: _SingleBottomNaviWidget(
+              enabled: currentPage == index,
+              entry: widget.paneItems[index],
+              onTap: () {
+                updatePage(index);
+              },
+              key: ValueKey(index),
+            ),
+          );
+        }),
+      ),
+    );
+    if (glass) {
+      // 墨韵 + 玻璃：底栏悬浮在内容上，磨砂
+      return BlurEffect(
+        child: Material(
+          textStyle: Theme.of(context).textTheme.labelSmall,
+          elevation: 0,
+          color: Colors.transparent,
+          child: bar,
+        ),
+      );
+    }
     return Material(
       textStyle: Theme.of(context).textTheme.labelSmall,
       elevation: 0,
-      child: Container(
-        height: _kBottomBarHeight,
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).colorScheme.outlineVariant,
-              width: 1,
-            ),
-          ),
-        ),
-        child: Row(
-          children: List<Widget>.generate(widget.paneItems.length, (index) {
-            return Expanded(
-              child: _SingleBottomNaviWidget(
-                enabled: currentPage == index,
-                entry: widget.paneItems[index],
-                onTap: () {
-                  updatePage(index);
-                },
-                key: ValueKey(index),
-              ),
-            );
-          }),
-        ),
-      ),
+      child: bar,
     );
   }
 
@@ -675,21 +694,67 @@ class _NaviMainViewState extends State<_NaviMainView> {
   @override
   Widget build(BuildContext context) {
     var shouldShowAppBar = state.controller.value < 2;
+    final mq = MediaQuery.of(context);
+    final content = AnimatedSwitcher(
+      duration: _fastAnimationDuration,
+      child: state.buildMainViewContent(),
+    );
+    if (!shouldShowAppBar) {
+      return MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        removeBottom: true,
+        child: content,
+      );
+    }
+    if (!isGlassEnabled) {
+      // 常规布局：顶/底栏各占一行
+      return Column(
+        children: [
+          state.buildTop().paddingTop(context.padding.top),
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              child: content,
+            ),
+          ),
+          state.buildBottom().paddingBottom(context.padding.bottom),
+        ],
+      );
+    }
+    // 墨韵 + 玻璃：底栏悬浮，内容从栏下穿过，模糊才会真正透出来。
+    // 给内容补充「底栏高度」的滚动余量，避免最后一项被栏遮住。
     return Column(
       children: [
-        if (shouldShowAppBar) state.buildTop().paddingTop(context.padding.top),
+        state.buildTop().paddingTop(context.padding.top),
         Expanded(
           child: MediaQuery.removePadding(
             context: context,
-            removeTop: shouldShowAppBar,
-            child: AnimatedSwitcher(
-              duration: _fastAnimationDuration,
-              child: state.buildMainViewContent(),
+            removeTop: true,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: MediaQuery(
+                    data: mq.copyWith(
+                      padding: mq.padding.copyWith(
+                        bottom: mq.padding.bottom +
+                            NaviPaneState._kBottomBarHeight,
+                      ),
+                    ),
+                    child: content,
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: state.buildBottom().paddingBottom(context.padding.bottom),
+                ),
+              ],
             ),
           ),
         ),
-        if (shouldShowAppBar)
-          state.buildBottom().paddingBottom(context.padding.bottom),
       ],
     );
   }

@@ -177,7 +177,7 @@ class Settings with ChangeNotifier {
   final _data = <String, dynamic>{
     'comicDisplayMode': 'detailed', // detailed, brief
     'comicTileScale': 1.00, // 0.75-1.25
-    'color': 'system', // red, pink, purple, green, orange, blue
+    'color': 'ink', // red, pink, purple, green, orange, blue ... ink=墨韵
     'theme_mode': 'system', // light, dark, system
     // 页面切换动画。default=平台原生；其余见 AppPageTransition
     'pageTransition': 'default',

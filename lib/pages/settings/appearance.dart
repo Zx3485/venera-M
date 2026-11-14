@@ -47,6 +47,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             "matcha": "抹茶".tl,
             "sand": "暖沙".tl,
             "dusk": "暮紫".tl,
+            "ink": "墨".tl,
           },
           onChanged: () async {
             await App.init();

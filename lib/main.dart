@@ -147,6 +147,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       'matcha' => const Color(0xFFA8B89A),     // 抹茶
       'sand' => const Color(0xFFC4A882),       // 暖沙
       'dusk' => const Color(0xFF8E7CA6),       // 暮紫
+      'ink' => kInkSeed,                        // 墨：近乎无彩的墨灰
       _ => Colors.blue,
     };
   }
