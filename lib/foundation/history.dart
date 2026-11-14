@@ -306,6 +306,17 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 只刷新封面 URL 并落盘，不改阅读时间、不触发监听。
+  /// 用于封面缺链时的被动补全（例如首页渲染历史行时），
+  /// 避免仅仅「浏览首页」就把历史排序打乱。
+  void updateCoverQuietly(History item) {
+    _db.execute(
+      "update history set cover = ? where id = ? and type = ?;",
+      [item.cover, item.id, item.type.value],
+    );
+    cachedHistories[item.id] = item;
+  }
+
   void clearHistory() {
     _db.execute("delete from history;");
     updateCache();

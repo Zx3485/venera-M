@@ -29,6 +29,11 @@ class BlurEffect extends StatelessWidget {
     // 高光只在磨砂开启且用户没关掉时才加
     final showHighlight = isGlassEnabled && glassHighlight;
 
+    // sigma=0 的模糊仍是常驻合成层，移动端滚动掉帧 —— 直接短路
+    if (sigma <= 0) {
+      return child;
+    }
+
     return ClipRRect(
       borderRadius: radius,
       child: BackdropFilter(

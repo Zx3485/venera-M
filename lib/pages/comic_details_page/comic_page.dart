@@ -1083,22 +1083,26 @@ class _InkCtaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 48,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: context.colorScheme.onSurface,
-          borderRadius: BorderRadius.circular(kRadiusXs),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: context.colorScheme.surface,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(kRadiusXs),
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: context.colorScheme.onSurface,
+            borderRadius: BorderRadius.circular(kRadiusXs),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: context.colorScheme.surface,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2,
+            ),
           ),
         ),
       ),
@@ -1115,25 +1119,29 @@ class _InkGhostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 48,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.6),
-            width: kBorderHairline,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(kRadiusXs),
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: context.colorScheme.outlineVariant.withValues(alpha: 0.6),
+              width: kBorderHairline,
+            ),
+            borderRadius: BorderRadius.circular(kRadiusXs),
           ),
-          borderRadius: BorderRadius.circular(kRadiusXs),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: context.colorScheme.onSurfaceVariant,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1,
+          child: Text(
+            text,
+            style: TextStyle(
+              color: context.colorScheme.onSurfaceVariant,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+            ),
           ),
         ),
       ),

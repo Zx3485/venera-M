@@ -37,6 +37,8 @@ class _ExplorePageState extends State<ExplorePage>
     if (!pages.isEqualTo(explorePages)) {
       setState(() {
         pages = explorePages;
+        // 先释放旧 controller，避免每次改设置泄漏一个 ticker
+        controller.dispose();
         controller = TabController(
           length: pages.length,
           vsync: this,
@@ -207,7 +209,8 @@ class _ExplorePageState extends State<ExplorePage>
         ),
         Positioned(
           right: 16,
-          bottom: 16,
+          // 玻璃模式下底栏悬浮在内容上，FAB 需要抬到栏上方
+          bottom: 16 + NaviPaneState.floatingBottomBarInset(context),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
             reverseDuration: const Duration(milliseconds: 150),

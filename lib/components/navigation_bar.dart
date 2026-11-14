@@ -94,6 +94,19 @@ class NaviPaneState extends State<NaviPane>
 
   static const _kBottomBarHeight = 58.0;
 
+  /// 悬浮底栏高度。玻璃模式下内容会延伸到底栏后面，
+  /// 页面上绝对定位的元素（FAB、侧栏底部按钮等）应据此避让。
+  static double floatingBottomBarInset(BuildContext context) {
+    if (!isGlassEnabled) {
+      return 0;
+    }
+    // 宽屏折叠成侧栏形态，没有底栏
+    if (context.width >= changePoint) {
+      return 0;
+    }
+    return _kBottomBarHeight;
+  }
+
   static const _kFoldedSideBarWidth = 72.0;
 
   static const _kSideBarWidth = 224.0;
@@ -694,7 +707,6 @@ class _NaviMainViewState extends State<_NaviMainView> {
   @override
   Widget build(BuildContext context) {
     var shouldShowAppBar = state.controller.value < 2;
-    final mq = MediaQuery.of(context);
     final content = AnimatedSwitcher(
       duration: _fastAnimationDuration,
       child: state.buildMainViewContent(),
@@ -732,26 +744,33 @@ class _NaviMainViewState extends State<_NaviMainView> {
           child: MediaQuery.removePadding(
             context: context,
             removeTop: true,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: MediaQuery(
-                    data: mq.copyWith(
-                      padding: mq.padding.copyWith(
-                        bottom: mq.padding.bottom +
-                            NaviPaneState._kBottomBarHeight,
+            child: Builder(
+              builder: (innerContext) {
+                // 此时 innerContext 的 padding.top 已被移除，
+                // 避免页面自己再补一次状态栏高度导致顶部双倍空白。
+                final innerMq = MediaQuery.of(innerContext);
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: MediaQuery(
+                        data: innerMq.copyWith(
+                          padding: innerMq.padding.copyWith(
+                            bottom: innerMq.padding.bottom +
+                                NaviPaneState._kBottomBarHeight,
+                          ),
+                        ),
+                        child: content,
                       ),
                     ),
-                    child: content,
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: state.buildBottom().paddingBottom(context.padding.bottom),
-                ),
-              ],
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: state.buildBottom().paddingBottom(context.padding.bottom),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

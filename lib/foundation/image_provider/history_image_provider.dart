@@ -30,7 +30,8 @@ class HistoryImageProvider
       checkStop();
       url = comic.data.cover;
       history.cover = url;
-      HistoryManager().addHistory(history);
+      // 只补封面，不动阅读时间（否则浏览首页会打乱历史排序）
+      HistoryManager().updateCoverQuietly(history);
     }
     await for (var progress in ImageDownloader.loadThumbnail(
       url,

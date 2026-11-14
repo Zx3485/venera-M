@@ -127,12 +127,19 @@ class _AppbarState extends State<Appbar> {
         elevation: _scrolledUnder ? 2 : 0,
         child: content,
       );
-    } else {
-      return BlurEffect(
-        blur: _scrolledUnder ? 15 : 0,
+    }
+    if (!glassInAppBar) {
+      // 磨砂关闭：实色标题栏，不再常驻 BackdropFilter
+      return Material(
+        color: context.colorScheme.surface.toOpacity(0.86),
+        elevation: 0,
         child: content,
       );
     }
+    return BlurEffect(
+      blur: _scrolledUnder ? glassBlur : 0,
+      child: content,
+    );
   }
 }
 
@@ -240,14 +247,23 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     ).paddingTop(topPadding);
 
     if (style == AppbarStyle.blur) {
+      if (!glassInAppBar) {
+        // 磨砂关闭：实色 SliverAppbar，不建 BackdropFilter
+        return SizedBox.expand(
+          child: Material(
+            color: context.colorScheme.surface,
+            elevation: 0,
+            borderRadius: BorderRadius.circular(radius),
+            child: body,
+          ),
+        );
+      }
       return SizedBox.expand(
         child: BlurEffect(
-          blur: glassInAppBar ? glassBlur : 15,
+          blur: glassBlur,
           child: Material(
             color: context.colorScheme.surface.toOpacity(
-              glassInAppBar
-                  ? (0.86 - glassOpacity * 0.8).clamp(0.25, 0.86).toDouble()
-                  : 0.86,
+              (0.86 - glassOpacity * 0.8).clamp(0.25, 0.86).toDouble(),
             ),
             elevation: 0,
             borderRadius: BorderRadius.circular(radius),

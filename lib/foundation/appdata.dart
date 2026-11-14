@@ -185,7 +185,7 @@ class Settings with ChangeNotifier {
     // 中低端机可能掉帧，默认关。
     'glassEffect': false,
     // 玻璃填充不透明度 0.0~0.9。太低文字看不清，太高模糊透不出来。
-    'glassOpacity': 0.9,
+    'glassOpacity': 0.3,
     // 模糊半径（sigma）0~60。超过 40 基本糊成色块。
     'glassBlur': 4.0,
     // 顶部高光渐变，模拟光线掠过玻璃表面

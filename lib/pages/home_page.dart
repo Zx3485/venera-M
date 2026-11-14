@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
           const SliverToBoxAdapter(child: _EmptyHomeHint())
         else
           ...sections.map(buildSection),
-        SliverPadding(padding: EdgeInsets.only(top: context.padding.bottom)),
+        // 底部余量由 SmoothCustomScrollView 统一追加，这里不再重复
       ],
     );
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
@@ -200,9 +200,9 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
 
   @override
   void dispose() {
-    super.dispose();
     DataSync().removeListener(update);
     WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   late DateTime lastCheck;
@@ -352,6 +352,10 @@ class _HistoryState extends State<_History> {
   @override
   Widget build(BuildContext context) {
     final dim = context.colorScheme.onSurfaceVariant;
+    // 没有历史记录时整个板块隐藏，不渲染可点击的空头部
+    if (history.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -554,6 +558,9 @@ class _LocalState extends State<_Local> {
   late int count;
 
   void onLocalComicsChange() {
+    if (!mounted) {
+      return;
+    }
     setState(() {
       local = LocalManager().getRecent();
       count = LocalManager().count;
