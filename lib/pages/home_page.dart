@@ -502,9 +502,10 @@ class _GreetHeader extends StatelessWidget {
                     ? 'Good afternoon'.tl
                     : 'Good evening'.tl;
     const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+    // 注意：本组件由外层 SliverToBoxAdapter(child: _GreetHeader()) 包裹，
+    // 这里必须返回 Box 组件，不能再返回 Sliver（否则运行时 RenderObject 类型不匹配崩溃）。
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -541,7 +542,6 @@ class _GreetHeader extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }
