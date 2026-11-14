@@ -369,21 +369,21 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                   icon: const Icon(Icons.menu_book),
                   text: 'Continue'.tl,
                   onPressed: continueRead,
-                  iconColor: context.useTextColor(Colors.yellow),
+                  iconColor: context.useTextColor(kSoftAmber),
                 ),
               if (!isMobile || hasHistory)
                 _ActionButton(
                   icon: const Icon(Icons.play_circle_outline),
                   text: 'Start'.tl,
                   onPressed: read,
-                  iconColor: context.useTextColor(Colors.orange),
+                  iconColor: context.useTextColor(kSoftAmber),
                 ),
               if (!isMobile && !isDownloaded)
                 _ActionButton(
                   icon: const Icon(Icons.download),
                   text: 'Download'.tl,
                   onPressed: download,
-                  iconColor: context.useTextColor(Colors.cyan),
+                  iconColor: context.useTextColor(kSoftTeal),
                 ),
               if (data!.isLiked != null)
                 _ActionButton(
@@ -397,7 +397,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                           .toString(),
                   isLoading: isLiking,
                   onPressed: likeOrUnlike,
-                  iconColor: context.useTextColor(Colors.red),
+                  iconColor: context.useTextColor(kSoftRed),
                 ),
               _ActionButton(
                 icon: const Icon(Icons.bookmark_outline_outlined),
@@ -406,20 +406,20 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 text: 'Favorite'.tl,
                 onPressed: openFavPanel,
                 onLongPressed: quickFavorite,
-                iconColor: context.useTextColor(Colors.purple),
+                iconColor: context.useTextColor(kSoftPurple),
               ),
               if (comicSource.commentsLoader != null)
                 _ActionButton(
                   icon: const Icon(Icons.comment),
                   text: (comic.commentCount ?? 'Comments'.tl).toString(),
                   onPressed: showComments,
-                  iconColor: context.useTextColor(Colors.green),
+                  iconColor: context.useTextColor(kSoftGreen),
                 ),
               _ActionButton(
                 icon: const Icon(Icons.share),
                 text: 'Share'.tl,
                 onPressed: share,
-                iconColor: context.useTextColor(Colors.blue),
+                iconColor: context.useTextColor(kSoftBlue),
               ),
             ],
           ).fixHeight(48),
@@ -454,7 +454,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.history, color: context.useTextColor(Colors.teal)),
+                  Icon(Icons.history, color: context.useTextColor(kSoftTeal)),
                   const SizedBox(width: 8),
                   Builder(
                     builder: (context) {
@@ -539,17 +539,16 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
     }) {
       Color color;
       if (isTitle) {
-        const colors = [
-          Colors.blue,
-          Colors.cyan,
-          Colors.red,
-          Colors.pink,
-          Colors.purple,
-          Colors.indigo,
-          Colors.teal,
-          Colors.green,
-          Colors.lime,
-          Colors.yellow,
+        // 低饱和语义色板：与主题色相统一，深浅主题下都柔和
+        final colors = [
+          kSoftBlue,
+          kSoftTeal,
+          kSoftRed,
+          kSoftPink,
+          kSoftPurple,
+          kSoftIndigo,
+          kSoftGreen,
+          kSoftAmber,
         ];
         color = context.useBackgroundColor(colors[(i++) % (colors.length)]);
       } else {

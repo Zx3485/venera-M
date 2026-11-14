@@ -22,7 +22,8 @@ class _HoverBoxState extends State<HoverBox> {
       onExit: (_) => setState(() => isHover = false),
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: kDurationFast,
+        curve: kCurve,
         decoration: BoxDecoration(
             color: isHover
                 ? Theme.of(context).colorScheme.surfaceContainerLow
@@ -173,6 +174,7 @@ class _ButtonState extends State<Button> {
         style: TextStyle(
           color: textColor,
           fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
         child: isLoading
             ? CircularProgressIndicator(
@@ -202,7 +204,8 @@ class _ButtonState extends State<Button> {
           }
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: kDurationFast,
+          curve: kCurve,
           padding: padding,
           constraints: const BoxConstraints(
             minWidth: 76,
@@ -210,7 +213,7 @@ class _ButtonState extends State<Button> {
           ),
           decoration: BoxDecoration(
             color: buttonColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: kBRPill,
             boxShadow: (isHover && !isLoading && (widget.type == ButtonType.filled || widget.type == ButtonType.normal))
                 ? [
                     BoxShadow(
@@ -223,13 +226,17 @@ class _ButtonState extends State<Button> {
             border: widget.type == ButtonType.outlined
                 ? Border.all(
                     color: widget.color ??
-                        Theme.of(context).colorScheme.outlineVariant,
-                    width: 0.6,
+                        Theme.of(context)
+                            .colorScheme
+                            .outlineVariant
+                            .withValues(alpha: 0.6),
+                    width: kBorderHairline,
                   )
                 : null,
           ),
           child: AnimatedSize(
-            duration: const Duration(milliseconds: 160),
+            duration: kDurationFast,
+            curve: kCurve,
             child: SizedBox(
               width: width,
               height: height,

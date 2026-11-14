@@ -1033,7 +1033,7 @@ class _BatteryWidgetState extends State<_BatteryWidget> {
       batteryIcon = Icons.battery_0_bar_sharp;
     } else {
       batteryIcon = Icons.battery_alert_sharp;
-      batteryColor = Colors.red;
+      batteryColor = context.colorScheme.error;
     }
 
     return Row(

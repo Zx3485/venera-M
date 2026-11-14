@@ -273,7 +273,11 @@ class NaviPaneState extends State<NaviPane>
           children: [
             Text(
               widget.paneItems[currentPage].label,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
+              ),
             ),
             const Spacer(),
             for (var action in widget.paneActions)

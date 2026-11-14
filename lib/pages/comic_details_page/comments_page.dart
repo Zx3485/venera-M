@@ -461,7 +461,7 @@ class _CommentTileState extends State<_CommentTile> {
               Icon(
                 Icons.favorite,
                 size: 16,
-                color: context.useTextColor(Colors.red),
+                color: context.useTextColor(kSoftRed),
               )
             else
               const Icon(Icons.favorite_border, size: 16),
@@ -520,11 +520,11 @@ class _CommentTileState extends State<_CommentTile> {
   Widget buildVote() {
     var upColor = context.colorScheme.outline;
     if (voteStatus == 1) {
-      upColor = context.useTextColor(Colors.red);
+      upColor = context.useTextColor(kSoftRed);
     }
     var downColor = context.colorScheme.outline;
     if (voteStatus == -1) {
-      downColor = context.useTextColor(Colors.blue);
+      downColor = context.useTextColor(kSoftBlue);
     }
 
     return Container(

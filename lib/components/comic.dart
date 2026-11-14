@@ -164,7 +164,14 @@ class ComicTile extends StatelessWidget {
           child: Container(
             height: 24,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: kBRXs,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.toOpacity(0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Row(
@@ -173,7 +180,7 @@ class ComicTile extends StatelessWidget {
                   Container(
                     height: 24,
                     width: 24,
-                    color: Colors.green,
+                    color: context.colorScheme.primary,
                     child: const Icon(
                       Icons.bookmark_rounded,
                       size: 16,
@@ -183,7 +190,7 @@ class ComicTile extends StatelessWidget {
                 if (history != null)
                   Container(
                     height: 24,
-                    color: Colors.blue.toOpacity(0.9),
+                    color: Colors.black.toOpacity(0.6),
                     constraints: const BoxConstraints(minWidth: 24),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: CustomPaint(
@@ -221,12 +228,12 @@ class ComicTile extends StatelessWidget {
         height: double.infinity,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.secondaryContainer,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kBRS,
           boxShadow: [
             BoxShadow(
-              color: context.colorScheme.outlineVariant,
-              blurRadius: 1,
-              offset: const Offset(0, 1),
+              color: Colors.black.toOpacity(0.14),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -242,7 +249,7 @@ class ComicTile extends StatelessWidget {
       }
 
       return InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: kBRM,
         onTap: _onTap,
         onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
         onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
@@ -283,11 +290,11 @@ class ComicTile extends StatelessWidget {
         Widget image = Container(
           decoration: BoxDecoration(
             color: context.colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: kBRS,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.toOpacity(0.2),
-                blurRadius: 2,
+                color: Colors.black.toOpacity(0.14),
+                blurRadius: 5,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -304,7 +311,7 @@ class ComicTile extends StatelessWidget {
         }
 
         return InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kBRS,
           onTap: _onTap,
           onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
           onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
@@ -349,8 +356,8 @@ class ComicTile extends StatelessWidget {
                                     ? const EdgeInsets.fromLTRB(4, 2, 4, 2)
                                     : const EdgeInsets.fromLTRB(5, 2, 5, 2),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.black.toOpacity(0.5),
+                              borderRadius: kBRXs,
+                              color: Colors.black.toOpacity(0.55),
                             ),
                             constraints: BoxConstraints(
                               maxWidth: constraints.maxWidth,
@@ -379,13 +386,14 @@ class ComicTile extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                padding: const EdgeInsets.fromLTRB(kSpaceXs, kSpaceS, kSpaceXs, 0),
                 child: Text(
                   comic.title.replaceAll('\n', ''),
                   maxLines: 1,
-                  overflow: TextOverflow.clip,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.w500,
+                    height: 1.25,
                   ),
                 ),
               ),
@@ -581,13 +589,13 @@ class _ComicDescription extends StatelessWidget {
                   runAlignment: WrapAlignment.start,
                   clipBehavior: Clip.antiAlias,
                   crossAxisAlignment: WrapCrossAlignment.end,
-                  spacing: 4,
-                  runSpacing: 3,
+                  spacing: kSpaceS,
+                  runSpacing: kSpaceS,
                   children: [
                     for (var s in tags!)
                       Container(
                         height: 21,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
                         constraints: BoxConstraints(
                           maxWidth: constraints.maxWidth * 0.45,
                         ),
@@ -595,7 +603,7 @@ class _ComicDescription extends StatelessWidget {
                           color: s == "Unavailable"
                               ? context.colorScheme.errorContainer
                               : context.colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: kBRXs,
                         ),
                         child: Center(
                           widthFactor: 1,
@@ -638,10 +646,10 @@ class _ComicDescription extends StatelessWidget {
             ),
             if (badge != null)
               Container(
-                padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+                padding: const EdgeInsets.fromLTRB(8, 3, 8, 3),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.tertiaryContainer,
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  borderRadius: kBRPill,
                 ),
                 child: Center(
                   child: Text(
@@ -1238,7 +1246,7 @@ class ComicListState extends State<ComicList> {
           if (widget.errorLeading != null) widget.errorLeading!,
           const Expanded(
             child: Center(
-              child: CircularProgressIndicator(),
+              child: FiveDotLoadingAnimation(),
             ),
           ),
         ],
@@ -1288,7 +1296,7 @@ class ComicListState extends State<ComicList> {
           if (widget.errorLeading != null) widget.errorLeading!,
           const Expanded(
             child: Center(
-              child: CircularProgressIndicator(),
+              child: FiveDotLoadingAnimation(),
             ),
           ),
         ],

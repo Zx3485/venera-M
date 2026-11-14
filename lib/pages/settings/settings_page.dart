@@ -189,22 +189,30 @@ class _SettingsPageState extends State<SettingsPage> {
 
       Widget content = AnimatedContainer(
         key: ValueKey(id),
-        duration: const Duration(milliseconds: 200),
+        duration: kDurationNormal,
+        curve: kCurve,
         width: double.infinity,
         height: 46,
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+        padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
         decoration: BoxDecoration(
-          color: selected ? colors.primaryContainer.toOpacity(0.36) : null,
-          border: Border(
-            left: BorderSide(
-              color: selected ? colors.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
+          color: selected ? colors.primaryContainer.toOpacity(0.45) : null,
+          borderRadius: kBRS,
         ),
         child: Row(children: [
+          // 圆头指示条：选中时弹出，未选中时收起
+          AnimatedContainer(
+            duration: kDurationNormal,
+            curve: kCurve,
+            width: 3,
+            height: selected ? 18 : 0,
+            margin: const EdgeInsets.only(right: kSpaceL),
+            decoration: BoxDecoration(
+              color: selected ? colors.primary : Colors.transparent,
+              borderRadius: kBRPill,
+            ),
+          ),
           Icon(icons[id]),
-          const SizedBox(width: 16),
+          const SizedBox(width: kSpaceL),
           Text(
             name,
             style: ts.s16,

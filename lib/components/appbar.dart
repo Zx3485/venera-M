@@ -80,7 +80,12 @@ class _AppbarState extends State<Appbar> {
     var content = Container(
       decoration: BoxDecoration(
         color: widget.backgroundColor ??
-            context.colorScheme.surface.toOpacity(0.86),
+            context.colorScheme.surface.toOpacity(
+              // 磨砂开启时降低底色不透明度，让模糊层真正透出来
+              glassInAppBar
+                  ? (0.86 - glassOpacity * 0.8).clamp(0.25, 0.86).toDouble()
+                  : 0.86,
+            ),
       ),
       height: _kAppBarHeight + context.padding.top,
       child: Row(
@@ -99,7 +104,11 @@ class _AppbarState extends State<Appbar> {
           ),
           Expanded(
             child: DefaultTextStyle(
-              style: DefaultTextStyle.of(context).style.copyWith(fontSize: 20),
+              style: DefaultTextStyle.of(context).style.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               child: widget.title,
@@ -213,7 +222,11 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         Expanded(
           child: DefaultTextStyle(
-            style: DefaultTextStyle.of(context).style.copyWith(fontSize: 20),
+            style: DefaultTextStyle.of(context).style.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
+              ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             child: title,
@@ -229,9 +242,13 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     if (style == AppbarStyle.blur) {
       return SizedBox.expand(
         child: BlurEffect(
-          blur: 15,
+          blur: glassInAppBar ? glassBlur : 15,
           child: Material(
-            color: context.colorScheme.surface.toOpacity(0.86),
+            color: context.colorScheme.surface.toOpacity(
+              glassInAppBar
+                  ? (0.86 - glassOpacity * 0.8).clamp(0.25, 0.86).toDouble()
+                  : 0.86,
+            ),
             elevation: 0,
             borderRadius: BorderRadius.circular(radius),
             child: body,
@@ -403,8 +420,8 @@ class _AppTabBarState extends State<AppTabBar> {
           ? BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: context.colorScheme.outlineVariant,
-                  width: 0.6,
+                  color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  width: kBorderHairline,
                 ),
               ),
             )
@@ -770,7 +787,8 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
         color: Theme.of(context).colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+            width: kBorderHairline,
           ),
         ),
       ),
@@ -876,7 +894,8 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+            width: kBorderHairline,
           ),
         ),
       ),

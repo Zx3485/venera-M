@@ -99,10 +99,13 @@ class _EmptyHomeHint extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       decoration: BoxDecoration(
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
-        ),
-        borderRadius: BorderRadius.circular(8),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withValues(alpha: 0.5),
+                  width: kBorderHairline,
+                ),
+                borderRadius: kBRS,
       ),
       child: Column(
         children: [
@@ -269,7 +272,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                         children: [
                           Icon(
                             Icons.error_outline,
-                            color: Colors.red,
+                            color: context.colorScheme.error,
                             size: 18,
                           ),
                           const SizedBox(width: 4),
@@ -343,11 +346,18 @@ class _HistoryState extends State<_History> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerLow
+              .withValues(alpha: 0.55),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.5),
+            width: kBorderHairline,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kBRS,
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
@@ -451,11 +461,18 @@ class _LocalState extends State<_Local> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerLow
+              .withValues(alpha: 0.55),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.5),
+            width: kBorderHairline,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kBRS,
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
@@ -776,11 +793,18 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerLow
+              .withValues(alpha: 0.55),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.5),
+            width: kBorderHairline,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kBRS,
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
@@ -841,9 +865,9 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: context.colorScheme.outlineVariant,
-                      width: 0.6,
-                    ),
+            color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: kBorderHairline,
+          ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -979,11 +1003,18 @@ class _ImageFavoritesState extends State<ImageFavorites> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerLow
+              .withValues(alpha: 0.55),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.5),
+            width: kBorderHairline,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kBRS,
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
@@ -1074,8 +1105,11 @@ class _ImageFavoritesState extends State<ImageFavorites> {
           color:
               displayType == type ? context.colorScheme.primaryContainer : null,
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.5),
+            width: kBorderHairline,
           ),
           borderRadius: BorderRadius.circular(radius),
         ),
@@ -1205,15 +1239,15 @@ class __ChartLineState extends State<_ChartLine>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
                     gradient: LinearGradient(
-                      colors: context.isDarkMode
-                          ? [
-                              Colors.blue.shade800,
-                              Colors.blue.shade500,
-                            ]
-                          : [
-                              Colors.blue.shade300,
-                              Colors.blue.shade600,
-                            ],
+                      // 主题色渐变：亮色端向白/黑插值，保证深浅主题都有层次
+                      colors: [
+                        Color.lerp(
+                          context.colorScheme.primary,
+                          context.isDarkMode ? Colors.black : Colors.white,
+                          0.22,
+                        )!,
+                        context.colorScheme.primary,
+                      ],
                     ),
                   ),
                 ).toAlign(Alignment.centerLeft);

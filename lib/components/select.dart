@@ -21,8 +21,10 @@ class Select extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: context.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: context.colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+        borderRadius: kBRXs,
       ),
       child: InkWell(
         onTap: () {
@@ -30,10 +32,15 @@ class Select extends StatelessWidget {
           var offset = renderBox.localToGlobal(Offset.zero);
           var size = renderBox.size;
           showMenu(
-            elevation: 3,
-            color: context.brightness == Brightness.light
-                ? const Color(0xFFF6F6F6)
-                : const Color(0xFF1E1E1E),
+            elevation: 0,
+            shadowColor: Colors.transparent,
+            color: context.colorScheme.surfaceContainerHigh,
+            shape: RoundedRectangleBorder(
+              borderRadius: kBRM,
+              side: BorderSide(
+                color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
             context: context,
             useRootNavigator: true,
             constraints: BoxConstraints(

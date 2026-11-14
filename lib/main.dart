@@ -172,16 +172,92 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         'sans-serif'
       ];
     }
+    var scheme = SeedColorScheme.fromSeeds(
+      primaryKey: primary,
+      secondaryKey: secondary,
+      tertiaryKey: tertiary,
+      brightness: brightness,
+      tones: FlexTones.vividBackground(brightness),
+    );
+    final isDark = brightness == Brightness.dark;
     return ThemeData(
-      colorScheme: SeedColorScheme.fromSeeds(
-        primaryKey: primary,
-        secondaryKey: secondary,
-        tertiaryKey: tertiary,
-        brightness: brightness,
-        tones: FlexTones.vividBackground(brightness),
-      ),
+      colorScheme: scheme,
       fontFamily: font,
       fontFamilyFallback: fallback,
+      // ── 组件级主题：让 M3 默认组件与自绘组件共享同一套视觉语言 ──
+      dialogTheme: DialogThemeData(
+        backgroundColor: scheme.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: kBRL),
+        barrierColor: Colors.black.withValues(alpha: 0.5),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: scheme.surfaceContainerHigh,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: kBRM,
+          side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+      ),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHigh),
+          elevation: const WidgetStatePropertyAll(0),
+          shadowColor: const WidgetStatePropertyAll(Colors.transparent),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: kBRM,
+              side: BorderSide(
+                color: scheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: scheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(borderRadius: kBRM),
+        surfaceTintColor: Colors.transparent,
+      ),
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(borderRadius: kBRXs),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      sliderTheme: const SliderThemeData(
+        trackHeight: 6,
+        thumbShape: RoundSliderThumbShape(enabledThumbRadius: 11),
+        overlayShape: RoundSliderOverlayShape(overlayRadius: 18),
+      ),
+      scrollbarTheme: ScrollbarThemeData(
+        radius: const Radius.circular(kRadiusPill),
+        thickness: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.hovered) ? 6.0 : 4.0),
+        thumbColor: WidgetStatePropertyAll(
+          scheme.onSurface.withValues(alpha: 0.28),
+        ),
+        crossAxisMargin: 2,
+        mainAxisMargin: 4,
+      ),
+      dividerTheme: DividerThemeData(
+        color: scheme.outlineVariant.withValues(alpha: 0.4),
+        thickness: 1,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: scheme.onSurfaceVariant,
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        shape: RoundedRectangleBorder(borderRadius: kBRM),
+      ),
+      visualDensity: VisualDensity.standard,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      splashFactory: isDark ? InkRipple.splashFactory : InkSparkle.splashFactory,
     );
   }
 

@@ -92,16 +92,10 @@ class SideBarRoute<T> extends PopupRoute<T> {
     body = Container(
       decoration: BoxDecoration(
         borderRadius: showSideBar
-            ? const BorderRadius.horizontal(left: Radius.circular(16))
+            ? const BorderRadius.horizontal(left: Radius.circular(kRadiusL))
             : null,
         color: Theme.of(context).colorScheme.surfaceTint,
-        boxShadow: context.brightness == ui.Brightness.dark ? [
-          BoxShadow(
-            color: Colors.white.withAlpha(50),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ] : null,
+        boxShadow: kOverlayShadows(context.brightness),
       ),
       clipBehavior: Clip.antiAlias,
       constraints: BoxConstraints(maxWidth: sideBarWidth),
@@ -146,7 +140,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
   }
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 300);
+  Duration get transitionDuration => kDurationSlow;
 
   @override
   Widget buildTransitions(BuildContext context, Animation<double> animation,
@@ -154,10 +148,9 @@ class SideBarRoute<T> extends PopupRoute<T> {
     var offset =
         Tween<Offset>(begin: const Offset(1, 0), end: const Offset(0, 0));
     return SlideTransition(
-      position: offset.animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.fastOutSlowIn,
-      )),
+      position: offset.animate(
+        CurvedAnimation(parent: animation, curve: kCurve),
+      ),
       child: child,
     );
   }
