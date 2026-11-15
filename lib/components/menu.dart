@@ -30,7 +30,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
     var left = location.dx;
     if (left < 10) {
       left = 10;
-    } 
+    }
     if (left + width > size.width - 10) {
       left = size.width - width - 10;
     }
@@ -39,6 +39,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
     if (top + height > size.height - 15) {
       top = size.height - height - 15;
     }
+    final isDark = context.isDarkMode;
     return Stack(
       children: [
         Positioned(
@@ -46,27 +47,19 @@ class _MenuRoute<T> extends PopupRoute<T> {
           top: top,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              border: context.brightness == Brightness.dark
-                  ? Border.all(color: context.colorScheme.outlineVariant)
-                  : null,
-              boxShadow: [
-                BoxShadow(
-                  color: context.colorScheme.shadow.toOpacity(0.2),
-                  blurRadius: 8,
-                  blurStyle: BlurStyle.outer,
-                ),
-              ],
+              borderRadius: kBRS,
+              border: Border.all(color: kGlassBorderColor(isDark)),
+              boxShadow: kOverlayShadows(context.brightness),
             ),
             child: BlurEffect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: kBRS,
               child: Material(
                 color: context.colorScheme.surface.toOpacity(0.92),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: kBRS,
                 child: Container(
                   width: width,
                   padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+                      const EdgeInsets.symmetric(vertical: kSpaceS, horizontal: 6),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children:
@@ -83,7 +76,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
 
   Widget buildEntry(MenuEntry entry, BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: kBRXs,
       onTap: () {
         Navigator.of(context).pop();
         entry.onClick();
@@ -91,7 +84,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
       child: SizedBox(
         height: entryHeight,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: kSpaceM),
           child: Row(
             children: [
               if (entry.icon != null)
@@ -100,7 +93,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
                   size: 18,
                   color: entry.color
                 ),
-              const SizedBox(width: 12),
+              const SizedBox(width: kSpaceM),
               Text(
                   entry.text,
                   style: TextStyle(color: entry.color)
@@ -113,15 +106,18 @@ class _MenuRoute<T> extends PopupRoute<T> {
   }
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 200);
+  Duration get transitionDuration => kDurationFast;
 
   @override
   Widget buildTransitions(BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child) {
+    final curved = CurvedAnimation(parent: animation, curve: kCurve);
     return FadeTransition(
-      opacity: animation.drive(Tween<double>(begin: 0, end: 1)
-          .chain(CurveTween(curve: Curves.ease))),
-      child: child,
+      opacity: curved,
+      child: ScaleTransition(
+        scale: Tween(begin: 0.95, end: 1.0).animate(curved),
+        child: child,
+      ),
     );
   }
 }

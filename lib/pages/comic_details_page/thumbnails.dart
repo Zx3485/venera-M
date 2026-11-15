@@ -108,13 +108,13 @@ class _ComicThumbnailsState extends State<_ComicThumbnails> {
                         const BorderRadius.all(Radius.circular(8)),
                         child: Container(
                           foregroundDecoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: kCorner(context, scale: 0.45),
                             border: Border.all(
                               color: Theme.of(context).colorScheme.outline,
                             ),
                           ),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: kCorner(context, scale: 0.45),
                           ),
                           width: double.infinity,
                           height: double.infinity,

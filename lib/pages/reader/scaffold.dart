@@ -538,7 +538,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                       padding: const EdgeInsets.fromLTRB(6, 2, 6, 0),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: kCorner(context, scale: 0.45),
                       ),
                       child: Center(child: Text(text)),
                     ).paddingLeft(16),
@@ -803,7 +803,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: kCorner(context, scale: 0.8),
           ),
           child: Icon(
             lastValue == 1
@@ -820,7 +820,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           height: 58,
           child: Material(
             color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: kCorner(context, scale: 0.8),
             elevation: 2,
             child: InkWell(
               onTap: () {
@@ -831,7 +831,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                 }
                 setFloatingButton(0);
               },
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: kCorner(context, scale: 0.8),
               child: Center(
                 child: Icon(
                   _getArrowIcon(
@@ -1033,7 +1033,7 @@ class _BatteryWidgetState extends State<_BatteryWidget> {
       batteryIcon = Icons.battery_0_bar_sharp;
     } else {
       batteryIcon = Icons.battery_alert_sharp;
-      batteryColor = Colors.red;
+      batteryColor = context.colorScheme.error;
     }
 
     return Row(
@@ -1168,7 +1168,7 @@ class _SelectImageOverlayContentState
             height: 42,
             decoration: BoxDecoration(
               color: context.colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: kCorner(context, scale: 0.45),
               border: Border.all(color: context.colorScheme.outlineVariant),
             ),
             child: Row(

@@ -23,14 +23,8 @@ class PopUpWidget<T> extends PopupRoute<T> {
       child: Container(
         decoration: showPopUp
             ? BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-                boxShadow: context.brightness == ui.Brightness.dark ? [
-                  BoxShadow(
-                    color: Colors.white.withAlpha(50),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ] : null,
+                borderRadius: kBRL,
+                boxShadow: kOverlayShadows(context.brightness),
               )
             : null,
         clipBehavior: showPopUp ? Clip.antiAlias : Clip.none,
@@ -67,16 +61,25 @@ class PopUpWidget<T> extends PopupRoute<T> {
   }
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 350);
+  Duration get transitionDuration => kDurationSlow;
 
   @override
   Widget buildTransitions(BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child) {
+    // 玻璃质感浮现：淡入 + 轻微上浮 + 从 0.96 缩放到位
+    final curved = CurvedAnimation(parent: animation, curve: kCurve);
     return FadeTransition(
-      opacity: animation.drive(
-        Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.ease)),
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0, 0.03),
+          end: Offset.zero,
+        ).animate(curved),
+        child: ScaleTransition(
+          scale: Tween(begin: 0.96, end: 1.0).animate(curved),
+          child: child,
+        ),
       ),
-      child: child,
     );
   }
 }
@@ -145,7 +148,10 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
                 Text(
                   widget.title,
                   style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.w500),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                  ),
                 ),
                 const Spacer(),
                 if (widget.tailing != null) ...widget.tailing!,

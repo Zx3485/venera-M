@@ -61,10 +61,10 @@ class _FollowUpdatesWidgetState
             color: Theme.of(context).colorScheme.outlineVariant,
             width: 0.6,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           onTap: () {
             context.to(() => FollowUpdatesPage());
           },
@@ -90,7 +90,7 @@ class _FollowUpdatesWidgetState
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   margin: const EdgeInsets.only(bottom: 16, left: 16),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: kCorner(context, scale: 0.45),
                     color: Theme.of(context).colorScheme.primaryContainer,
                   ),
                   child: Text(
@@ -186,7 +186,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             color: Theme.of(context).colorScheme.outlineVariant,
             width: 0.6,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +220,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             color: Theme.of(context).colorScheme.outlineVariant,
             width: 0.6,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,7 +329,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: kCorner(context, scale: 0.8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

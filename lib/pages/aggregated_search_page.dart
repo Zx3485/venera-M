@@ -146,7 +146,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
       margin: const EdgeInsets.only(left: _kLeftPadding),
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kCorner(context, scale: 0.45),
       ),
     );
   }

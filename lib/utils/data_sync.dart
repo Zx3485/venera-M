@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:venera/components/components.dart';
 import 'package:venera/components/window_frame.dart';
@@ -30,13 +32,88 @@ class DataSync with ChangeNotifier {
     }
   }
 
-  void onDataChanged() {
-    if (isEnabled) {
+  /// 自动上传的合并窗口。
+  ///
+  /// 启动、批量收藏、导入存档这类操作会在极短时间里连续触发几十次
+  /// [onDataChanged]，以前每一次都真的发一轮 WebDAV 上传，既慢又会互相
+  /// 打断（只有一个能真正跑起来，其余被静默丢弃）。现在统一走防抖窗口，
+  /// 窗口内的多次变更合并成一次上传。
+  static const _kUploadDebounce = Duration(seconds: 2);
+
+  Timer? _uploadDebounce;
+
+  /// 上一次上传还没结束时又来了新改动的补传标记。
+  bool _uploadQueued = false;
+
+  /// 大于 0 时丢弃一切自动上传。
+  ///
+  /// 下载合并期间，本地数据全部来自云端，逐条 notify 触发的回传纯属浪费，
+  /// 还会和下载互相等待。用计数器支持嵌套。
+  int _suppressUpload = 0;
+
+  /// 数据变化时的统一入口：合并成一次上传。
+  ///
+  /// 所有自动触发上传的地方（appdata.saveData、ComicSource.saveData、
+  /// 阅读器退出、管理器通知）都应该改走这里，而不是直接 [uploadData]。
+  void scheduleUpload() {
+    if (_suppressUpload > 0) {
+      return;
+    }
+    if (!isEnabled) {
+      return;
+    }
+    // 下载进行中：不丢，先记账，等下载结束再补一轮。
+    // （合并本身引起的那部分已被 withoutAutoUpload 抑制，走不到这里。）
+    if (isDownloading) {
+      _uploadQueued = true;
+      return;
+    }
+    if (isUploading) {
+      _uploadQueued = true;
+      return;
+    }
+    _uploadDebounce?.cancel();
+    _uploadDebounce = Timer(_kUploadDebounce, () {
+      _uploadDebounce = null;
       uploadData();
+    });
+  }
+
+  /// 取消待发的那一轮上传，但把「确实有改动没发出」记进 [_uploadQueued]。
+  ///
+  /// 不能只 cancel 了事：例如用户在 2 秒窗口内改了设置，恰好这时又触发了
+  /// 下载（回到前台 / 手动点同步），改动必须留到下载结束后补发，否则就丢了。
+  void _deferPendingUpload() {
+    if (_uploadDebounce != null) {
+      _uploadDebounce!.cancel();
+      _uploadDebounce = null;
+      _uploadQueued = true;
     }
   }
 
+  /// 在 [body] 执行期间抑制自动上传。
+  ///
+  /// 用于下载合并：期间产生的 saveData / notifyListeners 不应该再推回云端。
+  Future<T> withoutAutoUpload<T>(Future<T> Function() body) async {
+    _suppressUpload++;
+    try {
+      return await body();
+    } finally {
+      _suppressUpload--;
+    }
+  }
+
+  void onDataChanged() {
+    scheduleUpload();
+  }
+
   bool _handleWindowClose() {
+    if (_uploadDebounce != null) {
+      // 还有没发出去的改动，先冲掉再关窗口。
+      _uploadDebounce!.cancel();
+      _uploadDebounce = null;
+      uploadData();
+    }
     if (_isUploading) {
       _showWindowCloseDialog();
       return false;
@@ -97,7 +174,14 @@ class DataSync with ChangeNotifier {
   }
 
   Future<Res<bool>> uploadData() async {
-    if (isDownloading) return const Res(true);
+    // 手动/计划外的上传请求直接冲掉待发的防抖，避免紧接着再来一次。
+    _uploadDebounce?.cancel();
+    _uploadDebounce = null;
+    // 正在下载：本轮发不出去，但意图要留下，下载结束会补一轮。
+    if (isDownloading) {
+      _uploadQueued = true;
+      return const Res(true);
+    }
     if (_haveWaitingTask) return const Res(true);
     while (isUploading) {
       _haveWaitingTask = true;
@@ -169,6 +253,11 @@ class DataSync with ChangeNotifier {
     } finally {
       _isUploading = false;
       notifyListeners();
+      // 上传期间又攒下了新改动：补一次，但仍然走防抖，连发只会合一轮。
+      if (_uploadQueued) {
+        _uploadQueued = false;
+        scheduleUpload();
+      }
     }
   }
 
@@ -179,6 +268,9 @@ class DataSync with ChangeNotifier {
       await Future.delayed(const Duration(milliseconds: 100));
     }
     _haveWaitingTask = false;
+    // 真正要开始下载了才挂起待发的上传；放在提前 return 之前的话，
+    // 一旦在入口就退出，那一轮上传就再也没人补发。
+    _deferPendingUpload();
     _isDownloading = true;
     _lastError = null;
     notifyListeners();
@@ -216,7 +308,9 @@ class DataSync with ChangeNotifier {
         Log.info("Data Sync", "Downloading data from WebDAV server");
         var localFile = File(FilePath.join(App.cachePath, file.name!));
         await client.read2File(file.name!, localFile.path);
-        await importAppData(localFile, false, true);
+        // 合并期间大量 notifyListeners / saveData 会把刚下载的数据原样推回去，
+        // 既浪费一轮往返，又可能盖掉另一台设备刚上传的内容。整段抑制。
+        await withoutAutoUpload(() => importAppData(localFile, false, true));
         await localFile.delete();
         // 合并完成后把本地版本号抬到云端版本，避免下次重复下载同一个文件；
         // 不主动触发上传，等下一次真实的数据变更再推。
@@ -240,6 +334,13 @@ class DataSync with ChangeNotifier {
     } finally {
       _isDownloading = false;
       notifyListeners();
+      // 下载前被挂起的本地上传，现在补发（仍然走防抖，只发一轮）。
+      // 注意：只有「真实的本地改动」才该走到这里——合并本身已被
+      // withoutAutoUpload 抑制，不会把刚拉下来的数据原样推回去。
+      if (_uploadQueued) {
+        _uploadQueued = false;
+        scheduleUpload();
+      }
     }
   }
 

@@ -2,7 +2,7 @@ name: venera
 description: "A comic app."
 publish_to: 'none'
 
-version: 1.6.20+180
+version: 1.8.0+182
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -104,7 +104,18 @@ flutter:
     - assets/tags.json
     - assets/tags_tw.json
     - assets/opencc.txt
-# fonts:
+  fonts:
+    # Noto Serif SC（SIL OFL 1.1，授权见 assets/fonts/OFL.txt）。
+    # 从系统的变量字体实例化出 400/700 两个字重，再子集化到
+    # GB2312 + ASCII + 常用符号共 7553 字，每个字重约 3.3MB。
+    # 不子集的话单个变量字体 24MB，两个静态字重也超过 20MB。
+    # 重新生成：python tool/build_fonts.py
+    - family: Noto Serif SC
+      fonts:
+        - asset: assets/fonts/NotoSerifSC-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSerifSC-Bold.ttf
+          weight: 700
 
 flutter_to_arch:
   name: Venera

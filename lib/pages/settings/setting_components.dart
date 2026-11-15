@@ -44,9 +44,9 @@ class _SwitchSettingState extends State<_SwitchSetting> {
 
     assert(value is bool);
 
-    return ListTile(
-      title: Text(widget.title),
-      subtitle: widget.subtitle == null ? null : Text(widget.subtitle!),
+    return EditorialRow(
+      title: widget.title,
+      subtitle: widget.subtitle,
       trailing: Switch(
         value: value,
         onChanged: (value) {
@@ -183,14 +183,16 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
         ? appdata.settings.getDeviceReaderSetting(widget.settingKey)
         : appdata.settings[widget.settingKey];
 
-    return ListTile(
-      title: Row(
+    return EditorialRow(
+      title: widget.title,
+      subtitle: widget.optionTranslation[value] ?? "None",
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(widget.title),
-          const SizedBox(width: 4),
           if (widget.help != null)
-            Button.icon(
-              size: 18,
+            IconButton(
+              iconSize: 17,
+              visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.help_outline),
               onPressed: () {
                 showDialog(
@@ -212,10 +214,9 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
                 );
               },
             ),
+          const Icon(Icons.arrow_drop_down, size: 22),
         ],
       ),
-      subtitle: Text(widget.optionTranslation[value] ?? "None"),
-      trailing: const Icon(Icons.arrow_drop_down),
       onTap: () {
         var renderBox = context.findRenderObject() as RenderBox;
         var offset = renderBox.localToGlobal(Offset.zero);
@@ -314,14 +315,15 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
         : widget.useDeviceSettings
         ? appdata.settings.getDeviceReaderSetting(widget.settingKey)
         : appdata.settings[widget.settingKey];
-    return ListTile(
-      title: Row(
+    return EditorialRow(
+      title: widget.title,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(widget.title),
-          const SizedBox(width: 4),
           if (widget.help != null)
-            Button.icon(
-              size: 18,
+            IconButton(
+              iconSize: 17,
+              visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.help_outline),
               onPressed: () {
                 showDialog(
@@ -343,31 +345,34 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
                 );
               },
             ),
+          Select(
+            current: options[value],
+            values: options.values.toList(),
+            minWidth: 64,
+            onTap: (index) {
+              setState(() {
+                var value = options.keys.elementAt(index);
+                if (widget.comicId != null) {
+                  appdata.settings.setReaderSetting(
+                    widget.comicId!,
+                    widget.comicSource!,
+                    widget.settingKey,
+                    value,
+                  );
+                } else if (widget.useDeviceSettings) {
+                  appdata.settings.setDeviceReaderSetting(
+                    widget.settingKey,
+                    value,
+                  );
+                } else {
+                  appdata.settings[widget.settingKey] = value;
+                }
+              });
+              appdata.saveData();
+              widget.onChanged?.call();
+            },
+          ),
         ],
-      ),
-      trailing: Select(
-        current: options[value],
-        values: options.values.toList(),
-        minWidth: 64,
-        onTap: (index) {
-          setState(() {
-            var value = options.keys.elementAt(index);
-            if (widget.comicId != null) {
-              appdata.settings.setReaderSetting(
-                widget.comicId!,
-                widget.comicSource!,
-                widget.settingKey,
-                value,
-              );
-            } else if (widget.useDeviceSettings) {
-              appdata.settings.setDeviceReaderSetting(widget.settingKey, value);
-            } else {
-              appdata.settings[widget.settingKey] = value;
-            }
-          });
-          appdata.saveData();
-          widget.onChanged?.call();
-        },
       ),
     );
   }
@@ -422,57 +427,86 @@ class _SliderSettingState extends State<_SliderSetting> {
                 ? appdata.settings.getDeviceReaderSetting(widget.settingsIndex)
                 : appdata.settings[widget.settingsIndex])
             .toDouble();
-    return ListTile(
-      title: Text(widget.title, softWrap: true, maxLines: 2),
-      trailing: Text(value.toString(), style: ts.s12),
-      subtitle: Slider(
-        value: value,
-        onChanged: (value) {
-          if (value.toInt() == value) {
-            setState(() {
-              if (widget.comicId != null) {
-                appdata.settings.setReaderSetting(
-                  widget.comicId!,
-                  widget.comicSource!,
-                  widget.settingsIndex,
-                  value.toInt(),
-                );
-              } else if (widget.useDeviceSettings) {
-                appdata.settings.setDeviceReaderSetting(
-                  widget.settingsIndex,
-                  value.toInt(),
-                );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        EditorialRow(
+          title: widget.title,
+          showRule: false,
+          trailing: Text(
+            value.toString(),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: kRustColor(context),
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 2,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            activeTrackColor: kRustColor(context),
+            inactiveTrackColor: context.colorScheme.outlineVariant,
+            thumbColor: kRustColor(context),
+            overlayColor: kRustColor(context).toOpacity(0.12),
+          ),
+          child: Slider(
+            value: value,
+            onChanged: (value) {
+              if (value.toInt() == value) {
+                setState(() {
+                  if (widget.comicId != null) {
+                    appdata.settings.setReaderSetting(
+                      widget.comicId!,
+                      widget.comicSource!,
+                      widget.settingsIndex,
+                      value.toInt(),
+                    );
+                  } else if (widget.useDeviceSettings) {
+                    appdata.settings.setDeviceReaderSetting(
+                      widget.settingsIndex,
+                      value.toInt(),
+                    );
+                  } else {
+                    appdata.settings[widget.settingsIndex] = value.toInt();
+                  }
+                  appdata.saveData();
+                });
               } else {
-                appdata.settings[widget.settingsIndex] = value.toInt();
+                setState(() {
+                  if (widget.comicId != null) {
+                    appdata.settings.setReaderSetting(
+                      widget.comicId!,
+                      widget.comicSource!,
+                      widget.settingsIndex,
+                      value,
+                    );
+                  } else if (widget.useDeviceSettings) {
+                    appdata.settings.setDeviceReaderSetting(
+                      widget.settingsIndex,
+                      value,
+                    );
+                  } else {
+                    appdata.settings[widget.settingsIndex] = value;
+                  }
+                  appdata.saveData();
+                });
               }
-              appdata.saveData();
-            });
-          } else {
-            setState(() {
-              if (widget.comicId != null) {
-                appdata.settings.setReaderSetting(
-                  widget.comicId!,
-                  widget.comicSource!,
-                  widget.settingsIndex,
-                  value,
-                );
-              } else if (widget.useDeviceSettings) {
-                appdata.settings.setDeviceReaderSetting(
-                  widget.settingsIndex,
-                  value,
-                );
-              } else {
-                appdata.settings[widget.settingsIndex] = value;
-              }
-              appdata.saveData();
-            });
-          }
-          widget.onChanged?.call();
-        },
-        divisions: ((widget.max - widget.min) / widget.interval).toInt(),
-        min: widget.min,
-        max: widget.max,
-      ),
+              widget.onChanged?.call();
+            },
+            divisions: ((widget.max - widget.min) / widget.interval).toInt(),
+            min: widget.min,
+            max: widget.max,
+          ).paddingHorizontal(kPageInset - 8),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: kPageInset),
+          child: HairRule(),
+        ),
+      ],
     );
   }
 }
@@ -486,9 +520,9 @@ class _PopupWindowSetting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(title),
-      trailing: const Icon(Icons.arrow_right),
+    return EditorialRow(
+      title: title,
+      trailing: const Icon(Icons.arrow_right, size: 22),
       onTap: () {
         showPopUpWidget(App.rootContext, builder());
       },
@@ -603,12 +637,13 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
       ),
     );
 
-    return ListTile(
-      title: Text(widget.pages[key] ?? "(Invalid) $key"),
+    return EditorialRow(
+      title: widget.pages[key] ?? "(Invalid) $key",
       key: Key(key),
+      dense: true,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [removeButton, const Icon(Icons.drag_handle)],
+        children: [removeButton, const Icon(Icons.drag_handle, size: 20)],
       ),
     );
   }
@@ -712,9 +747,9 @@ class _CallbackSetting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(title),
-      subtitle: subtitle == null ? null : Text(subtitle!),
+    return EditorialRow(
+      title: title,
+      subtitle: subtitle,
       trailing: Button.normal(
         onPressed: callback,
         child: Text(actionTitle),
@@ -733,24 +768,40 @@ class _SettingPartTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 杂志分区：全大写小字标 + 粗横线，取代原来的「图标 + 18sp 标题 + 细底边」。
     return SliverToBoxAdapter(
-      child: Container(
-        padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: context.colorScheme.onSurface.withValues(alpha: 0.1),
-            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 34,
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 9),
+                Text(
+                  title.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 2.4,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ).paddingHorizontal(kPageInset),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 24),
-            const SizedBox(width: 8),
-            Text(title, style: ts.s18),
-          ],
-        ),
-      ),
+          Container(
+            height: kRuleHair,
+            margin: const EdgeInsets.only(left: kPageInset),
+            color: context.colorScheme.outlineVariant,
+          ),
+        ],
+      ).paddingTop(kSectionGap - 6),
     );
   }
 }

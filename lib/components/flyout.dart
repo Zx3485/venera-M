@@ -122,12 +122,13 @@ class FlyoutState extends State<Flyout> {
 
           Widget transition(BuildContext context, Animation<double> animation,
               Animation<double> secondaryAnimation, Widget flyout) {
+            final curved = CurvedAnimation(parent: animation, curve: kCurve);
             return SlideTransition(
               position: Tween<Offset>(
                 begin: const Offset(0, -0.05),
                 end: const Offset(0, 0),
-              ).animate(animation),
-              child: flyout,
+              ).animate(curved),
+              child: FadeTransition(opacity: curved, child: flyout),
             );
           }
 
@@ -181,21 +182,25 @@ class FlyoutContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return IntrinsicWidth(
       child: BlurEffect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kBRS,
         child: Material(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kBRS,
           type: MaterialType.card,
           color: context.colorScheme.surface.toOpacity(0.82),
           child: Container(
             constraints: const BoxConstraints(
               minWidth: minFlyoutWidth,
             ),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            padding: const EdgeInsets.symmetric(
+                vertical: kSpaceS, horizontal: kSpaceL),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: context.brightness == ui.Brightness.dark
-                  ? Border.all(color: context.colorScheme.outlineVariant)
-                  : null,
+              borderRadius: kBRS,
+              border: Border.all(
+                color: context.colorScheme.outlineVariant.withValues(
+                  alpha: 0.5,
+                ),
+                width: kBorderHairline,
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -203,7 +208,9 @@ class FlyoutContent extends StatelessWidget {
               children: [
                 Text(title,
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        letterSpacing: -0.2)),
                 if (content != null) content!,
                 const SizedBox(
                   height: 12,

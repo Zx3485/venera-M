@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "resource.h"
@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.github.wgh136" "\0"
-            VALUE "FileDescription", "venera" "\0"
+            VALUE "FileDescription", "Paperbound" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "venera" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.github.wgh136. All rights reserved." "\0"
             VALUE "OriginalFilename", "venera.exe" "\0"
-            VALUE "ProductName", "venera" "\0"
+            VALUE "ProductName", "Paperbound" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

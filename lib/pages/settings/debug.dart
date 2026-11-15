@@ -84,7 +84,7 @@ class DebugPageState extends State<DebugPage> {
                 margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(
                   border: Border.all(color: context.colorScheme.outline),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: kCorner(context, scale: 0.3),
                 ),
                 child: SingleChildScrollView(
                   child: Text(result).paddingAll(4),

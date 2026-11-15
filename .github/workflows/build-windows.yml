@@ -13,6 +13,13 @@ on:
 permissions:
   contents: write
 
+# 同一分支只保留最新的构建（与 build-apk.yml 同理）。
+# 桌面版一次 25~35 分钟，重复叠加更浪费 Runner 时间。
+# group 里带了 workflow 名，所以不会跟 APK 那边互相取消。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest

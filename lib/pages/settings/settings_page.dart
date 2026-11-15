@@ -150,30 +150,22 @@ class _SettingsPageState extends State<SettingsPage> {
           SizedBox(
             height: MediaQuery.of(context).padding.top,
           ),
-          SizedBox(
-            height: 56,
-            child: Row(children: [
-              const SizedBox(
-                width: 8,
+          // 报头：品牌字 + 返回，下方一条粗横线（与首页 Masthead 一致）
+          Masthead(
+            title: "Settings".tl,
+            padding: EdgeInsets.fromLTRB(
+              kPageInset - 12,
+              6,
+              kPageInset - 12,
+              0,
+            ),
+            actions: [
+              IconButton(
+                iconSize: 20,
+                icon: const Icon(Icons.arrow_back),
+                onPressed: context.pop,
               ),
-              Tooltip(
-                message: "Back",
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: context.pop,
-                ),
-              ),
-              const SizedBox(
-                width: 24,
-              ),
-              Text(
-                "Settings".tl,
-                style: ts.s20,
-              )
-            ]),
-          ),
-          const SizedBox(
-            height: 4,
+            ],
           ),
           Expanded(
             child: buildCategories(),
@@ -187,52 +179,22 @@ class _SettingsPageState extends State<SettingsPage> {
     Widget buildItem(String name, int id) {
       final bool selected = id == currentPage;
 
-      Widget content = AnimatedContainer(
-        key: ValueKey(id),
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 46,
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-        decoration: BoxDecoration(
-          color: selected ? colors.primaryContainer.toOpacity(0.36) : null,
-          border: Border(
-            left: BorderSide(
-              color: selected ? colors.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Row(children: [
-          Icon(icons[id]),
-          const SizedBox(width: 16),
-          Text(
-            name,
-            style: ts.s16,
-          ),
-          const Spacer(),
-          if (selected) const Icon(Icons.arrow_right)
-        ]),
-      );
-
-      return Padding(
-        padding: enableTwoViews
-            ? const EdgeInsets.fromLTRB(8, 0, 8, 0)
-            : EdgeInsets.zero,
-        child: InkWell(
-          onTap: () {
-            if (enableTwoViews) {
-              setState(() => currentPage = id);
-            } else {
-              context.to(() => _SettingsDetailPage(pageIndex: id));
-            }
-          },
-          child: content,
-        ).paddingVertical(4),
+      return EditorialNavItem(
+        label: name,
+        icon: icons[id],
+        selected: selected,
+        onTap: () {
+          if (enableTwoViews) {
+            setState(() => currentPage = id);
+          } else {
+            context.to(() => _SettingsDetailPage(pageIndex: id));
+          }
+        },
       );
     }
 
     return ListView.builder(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.only(bottom: kPageBottomInset(context)),
       itemCount: categories.length,
       itemBuilder: (context, index) => buildItem(categories[index].tl, index),
     );

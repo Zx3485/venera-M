@@ -25,34 +25,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             App.forceRebuild();
           },
         ).toSliver(),
-        SelectSetting(
-          title: "Theme Color".tl,
-          settingKey: "color",
-          optionTranslation: {
-            "system": "跟随系统".tl,
-            "red": "红".tl,
-            "pink": "粉".tl,
-            "purple": "紫".tl,
-            "green": "绿".tl,
-            "orange": "橙".tl,
-            "blue": "蓝".tl,
-            "yellow": "黄".tl,
-            "cyan": "青".tl,
-            // 低饱和色
-            "mistBlue": "雾霾蓝".tl,
-            "lilac": "藕荷紫".tl,
-            "sage": "鼠尾草绿".tl,
-            "slate": "岩灰".tl,
-            "coral": "珊瑚".tl,
-            "matcha": "抹茶".tl,
-            "sand": "暖沙".tl,
-            "dusk": "暮紫".tl,
-          },
-          onChanged: () async {
-            await App.init();
-            App.forceRebuild();
-          },
-        ).toSliver(),
+        // 主题色选项已移除：杂志版的配色由墨色 + 钢红决定，
+        // 用户可调的主色只会让版面偏离「纸与墨」的调性。
+        // 设置键 color 保留在 appdata 里做兼容，但不再读取。
         SelectSetting(
           title: "Page Transition".tl,
           settingKey: "pageTransition",
@@ -63,6 +38,20 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             "slideUp": "从下往上".tl,
             "sharedAxisX": "水平推进".tl,
             "none": "无动画".tl,
+          },
+          onChanged: () async {
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        // 圆角风格：封面、章节格、按钮、面板都跟着变。
+        // 杂志原味是直角，但审美因人而异，交给用户自己定。
+        SelectSetting(
+          title: "圆角风格".tl,
+          settingKey: "cornerStyle",
+          optionTranslation: {
+            "square": "直角 · 杂志原味".tl,
+            "soft": "小圆角 · 温和".tl,
+            "round": "大圆角 · 圆润".tl,
           },
           onChanged: () async {
             App.forceRebuild();
@@ -246,12 +235,13 @@ class _HomeSectionsEditorState extends State<_HomeSectionsEditor> {
       ),
     );
 
-    return ListTile(
+    return EditorialRow(
       key: Key(key),
-      title: Text((kHomeSectionNames[key] ?? key).tl),
+      title: (kHomeSectionNames[key] ?? key).tl,
+      dense: true,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [removeButton, const Icon(Icons.drag_handle)],
+        children: [removeButton, const Icon(Icons.drag_handle, size: 20)],
       ),
     );
   }
@@ -461,18 +451,19 @@ class _ShelvesEditorState extends State<_ShelvesEditor> {
   }
 
   Widget buildItem(String folder) {
-    return ListTile(
+    return EditorialRow(
       key: Key(folder),
-      title: Text(folder),
-      subtitle: Text(
-        "@c comics".tlParams({'c': LocalFavoritesManager().folderComics(folder)}),
-        style: ts.s12,
-      ),
+      title: folder,
+      subtitle: "@c comics".tlParams({
+        'c': LocalFavoritesManager().folderComics(folder),
+      }),
+      dense: true,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             tooltip: "Remove".tl,
+            iconSize: 18,
             onPressed: () {
               setState(() {
                 shelves.remove(folder);
@@ -481,7 +472,7 @@ class _ShelvesEditorState extends State<_ShelvesEditor> {
             },
             icon: const Icon(Icons.delete_outline),
           ),
-          const Icon(Icons.drag_handle),
+          const Icon(Icons.drag_handle, size: 20),
         ],
       ),
     );

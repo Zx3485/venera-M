@@ -17,10 +17,11 @@ class _AppSettingsState extends State<AppSettings> {
           title: "Data".tl,
           icon: Icons.storage,
         ),
-        ListTile(
-          title: Text("Storage Path for local comics".tl),
-          subtitle: Text(LocalManager().path, softWrap: false),
+        EditorialRow(
+          title: "Storage Path for local comics".tl,
+          subtitle: LocalManager().path,
           trailing: IconButton(
+            iconSize: 19,
             icon: const Icon(Icons.copy),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: LocalManager().path));
@@ -57,9 +58,9 @@ class _AppSettingsState extends State<AppSettings> {
             }
           },
         ).toSliver(),
-        ListTile(
-          title: Text("Cache Size".tl),
-          subtitle: Text(bytesToReadableString(CacheManager().currentSize)),
+        EditorialRow(
+          title: "Cache Size".tl,
+          subtitle: bytesToReadableString(CacheManager().currentSize),
         ).toSliver(),
         _CallbackSetting(
           title: "Clear Cache".tl,
@@ -473,14 +474,23 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               onChanged: (value) => disableSync = value,
             ),
             const SizedBox(height: 12),
-            ListTile(
-              leading: Icon(Icons.sync),
-              title: Text("Auto Sync Data".tl),
-              contentPadding: EdgeInsets.zero,
-              trailing: Switch(
-                value: autoSync,
-                onChanged: onAutoSyncChanged,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Auto Sync Data".tl,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: autoSync,
+                  onChanged: onAutoSyncChanged,
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             RadioGroup<bool>(
@@ -512,7 +522,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: kCorner(context, scale: 0.4),
                       ),
                       child: Row(
                         children: [

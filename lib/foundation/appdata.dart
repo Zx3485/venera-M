@@ -50,7 +50,9 @@ class Appdata with Init {
       _isSavingData = false;
     }
     if (sync) {
-      DataSync().uploadData();
+      // 走防抖：一次启动里 saveData 会被调用几十次，直接上传等于几十轮
+      // WebDAV 往返，还会互相打断。scheduleUpload 会把它们合并成一次。
+      DataSync().scheduleUpload();
     }
   }
 
@@ -177,7 +179,10 @@ class Settings with ChangeNotifier {
   final _data = <String, dynamic>{
     'comicDisplayMode': 'detailed', // detailed, brief
     'comicTileScale': 1.00, // 0.75-1.25
-    'color': 'system', // red, pink, purple, green, orange, blue
+    // 已废弃：杂志版配色固定为墨色 + 钢红，不再读这个键。
+    // 保留默认值是为了兼容旧同步数据（云端备份里可能存着别的色名，
+    // 删掉这个键会走进「未定义」分支，反而更容易出问题）。
+    'color': 'ink',
     'theme_mode': 'system', // light, dark, system
     // 页面切换动画。default=平台原生；其余见 AppPageTransition
     'pageTransition': 'default',
@@ -185,7 +190,7 @@ class Settings with ChangeNotifier {
     // 中低端机可能掉帧，默认关。
     'glassEffect': false,
     // 玻璃填充不透明度 0.0~0.9。太低文字看不清，太高模糊透不出来。
-    'glassOpacity': 0.9,
+    'glassOpacity': 0.3,
     // 模糊半径（sigma）0~60。超过 40 基本糊成色块。
     'glassBlur': 4.0,
     // 顶部高光渐变，模拟光线掠过玻璃表面
@@ -193,6 +198,8 @@ class Settings with ChangeNotifier {
     // 分界面开关：阅读器工具栏 / 列表页标题栏
     'glassInReader': true,
     'glassInAppBar': true,
+    // 圆角风格：square=直角(杂志原味) / soft=小圆角 / round=大圆角
+    'cornerStyle': 'square',
     'newFavoriteAddTo': 'end', // start, end
     'moveFavoriteAfterRead': 'none', // none, end, start
     'proxy': 'system', // direct, system, proxy string

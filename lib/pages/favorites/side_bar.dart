@@ -62,7 +62,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         border: Border(
           right: BorderSide(
             color: context.colorScheme.outlineVariant,
-            width: 0.6,
+            width: kRuleHair,
           ),
         ),
       ),
@@ -78,7 +78,12 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
                   const SizedBox(width: 8),
                   Text(
                     "Folders".tl,
-                    style: ts.s18,
+                    style: kSerifStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                      color: context.colorScheme.onSurface,
+                    ),
                   ),
                 ],
               ),
@@ -87,7 +92,10 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
             child: ListView.builder(
               padding: widget.withAppbar
                   ? EdgeInsets.zero
-                  : EdgeInsets.only(top: context.padding.top),
+                  : EdgeInsets.only(
+                      top: context.padding.top + 8,
+                      bottom: kPageBottomInset(context) - kPillNavReserved,
+                    ),
               itemCount: folders.length + networkFolders.length + 3,
               itemBuilder: (context, index) {
                 if (index == 0) {
@@ -115,82 +123,85 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     );
   }
 
-  Widget buildLocalTitle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(
-            Icons.local_activity,
-            color: context.colorScheme.secondary,
-          ),
-          const SizedBox(width: 12),
-          Text("Local".tl),
-          const Spacer(),
-          MenuButton(
-            entries: [
-              MenuEntry(
-                icon: Icons.add,
-                text: 'Create Folder'.tl,
-                onClick: () {
-                  newFolder().then((value) {
-                    setState(() {
-                      folders = LocalFavoritesManager().folderNames;
-                    });
-                  });
-                },
+  /// 栏目标题：全大写小字标 + 右侧菜单，下方一条 hairline。
+  Widget _buildSectionHeader(String title, Widget trailing) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 34,
+          child: Row(
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: kKickerTracking,
+                  fontWeight: FontWeight.w700,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
               ),
-              MenuEntry(
-                icon: Icons.reorder,
-                text: 'Sort'.tl,
-                onClick: () {
-                  sortFolders().then((value) {
-                    setState(() {
-                      folders = LocalFavoritesManager().folderNames;
-                    });
-                  });
-                },
-              ),
+              const Spacer(),
+              trailing,
             ],
-          ),
-        ],
-      ).paddingHorizontal(16),
+          ).paddingHorizontal(kPageInset),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: kPageInset),
+          child: HairRule(),
+        ),
+        const SizedBox(height: 6),
+      ],
     );
   }
 
-  Widget buildNetworkTitle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: context.colorScheme.outlineVariant,
-            width: 0.6,
+  Widget buildLocalTitle() {
+    return _buildSectionHeader(
+      "Local".tl,
+      MenuButton(
+        entries: [
+          MenuEntry(
+            icon: Icons.add,
+            text: 'Create Folder'.tl,
+            onClick: () {
+              newFolder().then((value) {
+                setState(() {
+                  folders = LocalFavoritesManager().folderNames;
+                });
+              });
+            },
           ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.cloud,
-            color: context.colorScheme.secondary,
-          ),
-          const SizedBox(width: 12),
-          Text("Network".tl),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              showPopUpWidget(
-                App.rootContext,
-                setFavoritesPagesWidget(),
-              );
+          MenuEntry(
+            icon: Icons.reorder,
+            text: 'Sort'.tl,
+            onClick: () {
+              sortFolders().then((value) {
+                setState(() {
+                  folders = LocalFavoritesManager().folderNames;
+                });
+              });
             },
           ),
         ],
-      ).paddingHorizontal(16),
-    );
+      ),
+    ).paddingTop(6);
+  }
+
+  Widget buildNetworkTitle() {
+    return _buildSectionHeader(
+      "Network".tl,
+      IconButton(
+        iconSize: 17,
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.settings),
+        onPressed: () {
+          showPopUpWidget(
+            App.rootContext,
+            setFavoritesPagesWidget(),
+          );
+        },
+      ),
+    ).paddingTop(kSectionGap - 12);
   }
 
   Widget buildLocalFolder(String name) {
@@ -204,7 +215,10 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     var folderName = name == _localAllFolderLabel
         ? "All".tl
         : getFavoriteDataOrNull(name)?.title ?? name;
-    return InkWell(
+    return EditorialNavItem(
+      label: folderName,
+      selected: isSelected,
+      count: count,
       onTap: () {
         if (isSelected) {
           return;
@@ -212,42 +226,6 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         favPage.setFolder(false, name);
         widget.onSelected?.call();
       },
-      child: Container(
-        height: 42,
-        alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : null,
-          border: Border(
-            left: BorderSide(
-              color:
-                  isSelected ? context.colorScheme.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.only(left: 16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(folderName),
-            ),
-            Container(
-              margin: EdgeInsets.only(right: 8),
-              padding: EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(count.toString()),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -257,7 +235,9 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
       return const SizedBox();
     }
     bool isSelected = key == favPage.folder && favPage.isNetwork;
-    return InkWell(
+    return EditorialNavItem(
+      label: data.title,
+      selected: isSelected,
       onTap: () {
         if (isSelected) {
           return;
@@ -265,24 +245,6 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         favPage.setFolder(true, key);
         widget.onSelected?.call();
       },
-      child: Container(
-        height: 42,
-        alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : null,
-          border: Border(
-            left: BorderSide(
-              color:
-                  isSelected ? context.colorScheme.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.only(left: 16),
-        child: Text(data.title),
-      ),
     );
   }
 

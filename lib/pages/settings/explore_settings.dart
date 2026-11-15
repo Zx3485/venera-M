@@ -135,9 +135,11 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
       body: ListView.builder(
         itemCount: appdata.settings["blockedWords"].length,
         itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(appdata.settings["blockedWords"][index]),
+          return EditorialRow(
+            title: appdata.settings["blockedWords"][index],
+            dense: true,
             trailing: IconButton(
+              iconSize: 18,
               icon: const Icon(Icons.close),
               onPressed: () {
                 appdata.settings["blockedWords"].removeAt(index);
@@ -280,9 +282,11 @@ class _ManageBlockingCommentWordViewState extends State<_ManageBlockingCommentWo
       body: ListView.builder(
         itemCount: appdata.settings["blockedCommentWords"].length,
         itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(appdata.settings["blockedCommentWords"][index]),
+          return EditorialRow(
+            title: appdata.settings["blockedCommentWords"][index],
+            dense: true,
             trailing: IconButton(
+              iconSize: 18,
               icon: const Icon(Icons.close),
               onPressed: () {
                 appdata.settings["blockedCommentWords"].removeAt(index);

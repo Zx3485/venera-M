@@ -19,6 +19,14 @@ on:
 permissions:
   contents: write
 
+# 同一分支只保留最新的构建。
+# 没这段时，连着推两次会有两个 job 同时跑（各约 16 分钟），
+# 而且它们产出的 artifact 同名 venera-apk，下载时容易点错到旧的那份。
+# 按 workflow + ref 分组：不同 workflow、不同分支互不影响。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-22.04

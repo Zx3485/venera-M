@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>venera UI 方向提案 · 四选一</title>
+<style>
+/* ══════════════ 页面框架 ══════════════ */
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background:#0d0e12;
+  color:#e8eaf0;
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  padding-bottom:80px;
+}
+.header { max-width:1180px; margin:0 auto; padding:44px 24px 8px; }
+.header h1 { font-size:26px; font-weight:700; letter-spacing:-.5px; }
+.header p  { color:#9aa0ae; margin-top:8px; font-size:14px; line-height:1.7; }
+.header p b { color:#e8eaf0; }
+
+.tabs {
+  position:sticky; top:0; z-index:50;
+  display:flex; gap:10px; justify-content:center;
+  padding:14px 16px; margin-top:18px;
+  background:rgba(13,14,18,.82); backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.tab {
+  border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);
+  color:#c6cad4; padding:10px 22px; border-radius:999px;
+  font-size:14px; font-weight:600; cursor:pointer; transition:all .22s;
+}
+.tab:hover { background:rgba(255,255,255,.09); color:#fff; }
+.tab.active { background:#fff; color:#111; border-color:#fff; }
+.tab i { font-style:normal; opacity:.55; margin-right:6px; font-size:12px; }
+
+.proposal { display:none; max-width:1180px; margin:0 auto; padding:36px 24px 10px; }
+.proposal.active { display:block; animation:fadeUp .35s ease; }
+@keyframes fadeUp { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
+
+.intro { display:flex; align-items:flex-start; gap:18px; margin-bottom:26px; flex-wrap:wrap; }
+.intro .txt { flex:1; min-width:300px; }
+.intro h2 { font-size:21px; font-weight:700; letter-spacing:-.3px; }
+.intro .sub { color:#9aa0ae; font-size:14px; margin-top:6px; line-height:1.8; max-width:640px; }
+.intro .tags { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+.intro .tags span {
+  font-size:12px; padding:5px 12px; border-radius:999px;
+  border:1px solid rgba(255,255,255,.14); color:#aeb4c2;
+}
+.stage { display:flex; gap:34px; flex-wrap:wrap; align-items:flex-start; }
+
+/* ══════════════ 手机壳 ══════════════ */
+.phone {
+  width:318px; height:652px; flex-shrink:0;
+  border-radius:44px; padding:7px;
+  background:#17181d;
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 24px 60px rgba(0,0,0,.55), inset 0 0 0 2px #000;
+  position:relative;
+}
+.phone .screen {
+  position:absolute; inset:7px; border-radius:38px; overflow:hidden;
+}
+.scroll {
+  position:absolute; inset:0; overflow-y:auto; scrollbar-width:none;
+  padding-bottom:96px;
+}
+.scroll::-webkit-scrollbar { display:none; }
+.statusbar {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 26px 6px; font-size:12.5px; font-weight:600; position:relative; z-index:5;
+}
+.notch {
+  position:absolute; top:14px; left:50%; transform:translateX(-50%);
+  width:88px; height:22px; border-radius:12px; background:#000; z-index:9;
+}
+.navbar {
+  position:absolute; left:14px; right:14px; bottom:14px; z-index:8;
+  display:flex; align-items:center; justify-content:space-around;
+  padding:8px 6px;
+}
+.navitem {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  font-size:9.5px; cursor:pointer; padding:5px 12px; border-radius:16px; transition:.2s;
+}
+.navitem svg { width:19px; height:19px; }
+
+/* ══════════════ 封面占位 ══════════════ */
+.cov { position:relative; overflow:hidden; flex-shrink:0; }
+.cov .cn {
+  position:absolute; left:7px; bottom:6px; right:7px;
+  font-size:10px; font-weight:700; line-height:1.25; color:#fff;
+  text-shadow:0 1px 4px rgba(0,0,0,.55); letter-spacing:.2px;
+}
+.cov .sub {
+  position:absolute; right:6px; top:5px; font-size:8px; color:rgba(255,255,255,.92);
+  background:rgba(0,0,0,.38); padding:2px 6px; border-radius:999px; font-weight:600;
+}
+.c1 { background:linear-gradient(135deg,#5b6cf0,#8a3fd1 60%,#c0399f); }
+.c2 { background:linear-gradient(150deg,#ff8a5c,#e5484d 55%,#7c2a48); }
+.c3 { background:linear-gradient(140deg,#22b8cf,#2563eb 70%,#1e2a78); }
+.c4 { background:linear-gradient(135deg,#34c98e,#0e9488 60%,#134e4a); }
+.c5 { background:linear-gradient(140deg,#f7b733,#e5484d 75%); }
+.c6 { background:linear-gradient(150deg,#6d5bd0,#2b2178 65%,#151043); }
+.c7 { background:linear-gradient(135deg,#f2789f,#9a5bd0 70%,#3b2a78); }
+.c8 { background:linear-gradient(145deg,#38b6ff,#5b6cf0 55%,#232052); }
+.cov::after {
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 32%,transparent 62%,rgba(0,0,0,.34));
+}
+
+/* ══════════════ SVG 图标 ══════════════ */
+.ic { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ══════════════════════════════════════════
+   方案 A · 星璃玻璃 Aurora Glass
+   ══════════════════════════════════════════ */
+.tA { background:#0a0b13; }
+.tA .blob { position:absolute; border-radius:50%; filter:blur(52px); opacity:.5; pointer-events:none; }
+.tA .b1 { width:230px; height:230px; background:#6d4fe0; top:-60px; left:-70px; }
+.tA .b2 { width:200px; height:200px; background:#0ea5c9; top:200px; right:-80px; opacity:.34; }
+.tA .b3 { width:220px; height:220px; background:#c0399f; top:520px; left:-90px; opacity:.30; }
+.tA .statusbar, .tA .h-greet, .tA .sec-h { color:#eef0ff; position:relative; z-index:2; }
+.tA .greet { padding:16px 20px 0; position:relative; z-index:2; }
+.tA .greet .hi { font-size:21px; font-weight:700; letter-spacing:-.3px; }
+.tA .greet .date { font-size:11px; color:#8f94ff; margin-top:3px; font-weight:600; }
+.tA .greet .avatar {
+  position:absolute; right:20px; top:14px; width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(135deg,#6d4fe0,#c0399f); border:1.5px solid rgba(255,255,255,.35);
+}
+.tA .search {
+  margin:14px 18px 0; height:46px; border-radius:999px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(16px);
+  display:flex; align-items:center; gap:10px; padding:0 16px;
+  color:#aeb3d4; font-size:13px; position:relative; z-index:2;
+}
+.tA .glass {
+  background:rgba(255,255,255,.065); border:1px solid rgba(255,255,255,.13);
+  backdrop-filter:blur(18px); border-radius:20px;
+  position:relative; z-index:2;
+}
+.tA .sec-h {
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin:20px 20px 10px; font-size:15px; font-weight:700;
+}
+.tA .sec-h .more { font-size:11px; color:#8f94ff; font-weight:600; cursor:pointer; }
+.tA .row { display:flex; gap:12px; overflow-x:auto; scrollbar-width:none; padding:2px 18px 4px; }
+.tA .row::-webkit-scrollbar { display:none; }
+.tA .hcard {
+  width:118px; padding:8px; border-radius:18px; flex-shrink:0; cursor:pointer; transition:.2s;
+}
+.tA .hcard:hover { background:rgba(255,255,255,.11); }
+.tA .hcard .cov { width:102px; height:136px; border-radius:13px; }
+.tA .hcard .pt { font-size:11px; font-weight:600; color:#eef0ff; margin-top:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tA .hcard .ps { font-size:9.5px; color:#9aa0c0; margin-top:2px; }
+.tA .hcard .pbar { height:2.5px; border-radius:2px; background:rgba(255,255,255,.14); margin-top:6px; overflow:hidden; }
+.tA .hcard .pbar i { display:block; height:100%; background:linear-gradient(90deg,#6d4fe0,#c0399f); border-radius:2px; }
+.tA .stats { display:flex; gap:12px; margin:0 18px; }
+.tA .stat { flex:1; padding:13px 15px; display:flex; align-items:center; gap:11px; }
+.tA .stat .num { font-size:19px; font-weight:800; color:#fff; letter-spacing:-.5px; }
+.tA .stat .lab { font-size:10px; color:#9aa0c0; margin-top:1px; }
+.tA .stat .dot { width:32px; height:32px; border-radius:11px; display:flex; align-items:center; justify-content:center; }
+.tA .stat .d1 { background:linear-gradient(135deg,#6d4fe0,#8f6cf5); }
+.tA .stat .d2 { background:linear-gradient(135deg,#0ea5c9,#22b8cf); }
+.tA .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 18px; }
+.tA .gcard { padding:9px; cursor:pointer; transition:.2s; }
+.tA .gcard:hover { background:rgba(255,255,255,.11); }
+.tA .gcard .cov { width:100%; height:150px; border-radius:14px; }
+.tA .gcard .gt { font-size:12px; font-weight:600; color:#eef0ff; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tA .gcard .gs { font-size:9.5px; color:#9aa0c0; margin-top:2px; }
+.tA .navbar {
+  background:rgba(20,22,34,.62); border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(22px); border-radius:999px;
+}
+.tA .navitem { color:#8c92b4; }
+.tA .navitem.on {
+  background:linear-gradient(135deg,#6d4fe0,#a03e9a); color:#fff;
+  padding:6px 14px; border-radius:999px;
+}
+.tA .navitem.on svg { stroke-width:2.2; }
+/* A 详情页 */
+.tA .dh { position:relative; height:230px; }
+.tA .dh .bg { position:absolute; inset:0; }
+.tA .dh .bgcov { position:absolute; inset:-30px; filter:blur(30px) saturate(1.3); opacity:.85; }
+.tA .dh .mask { position:absolute; inset:0; background:linear-gradient(180deg,rgba(10,11,19,.25),rgba(10,11,19,.86) 78%,#0a0b13); }
+.tA .dh .back {
+  position:absolute; top:44px; left:16px; width:34px; height:34px; border-radius:50%;
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.2);
+  backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; color:#fff; z-index:3;
+}
+.tA .dh .cover {
+  position:absolute; left:50%; transform:translateX(-50%); bottom:-58px;
+  width:128px; height:176px; border-radius:16px;
+  box-shadow:0 18px 44px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.22);
+  z-index:3;
+}
+.tA .dtitle { text-align:center; margin-top:72px; position:relative; z-index:2; padding:0 24px; }
+.tA .dtitle .t { font-size:19px; font-weight:800; color:#fff; letter-spacing:-.3px; }
+.tA .dtitle .m { font-size:11px; color:#9aa0c0; margin-top:6px; }
+.tA .chips { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin-top:12px; position:relative; z-index:2; padding:0 20px; }
+.tA .chip {
+  font-size:10.5px; padding:6px 13px; border-radius:999px; color:#c9cdf0;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(12px); font-weight:600;
+}
+.tA .cta {
+  margin:18px 22px 0; height:50px; border-radius:999px;
+  background:linear-gradient(135deg,#6d4fe0,#c0399f);
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  color:#fff; font-size:15px; font-weight:700; position:relative; z-index:2;
+  box-shadow:0 10px 26px rgba(109,79,224,.4); cursor:pointer; transition:.2s;
+}
+.tA .cta:hover { transform:translateY(-1px); }
+.tA .dsec { margin:22px 24px 0; position:relative; z-index:2; }
+.tA .dsec .sh { font-size:13px; font-weight:700; color:#eef0ff; margin-bottom:9px; }
+.tA .dsec .desc { font-size:11.5px; color:#9aa0c0; line-height:1.85; }
+.tA .ep {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:11px 14px; border-radius:14px; margin-bottom:8px;
+  font-size:12px; color:#d5d8ea; cursor:pointer; transition:.2s;
+}
+.tA .ep:hover { background:rgba(255,255,255,.09); }
+.tA .ep .n { font-weight:600; }
+.tA .ep .pg { font-size:10px; color:#8c92b4; }
+
+/* ══════════════════════════════════════════
+   方案 B · 墨韵极简 Ink Minimal
+   ══════════════════════════════════════════ */
+.tB { background:#fafaf8; color:#1a1a1e; }
+.tB .statusbar { color:#1a1a1e; }
+.tB .greet { padding:20px 24px 0; }
+.tB .greet .date { font-size:10.5px; color:#8a8a92; letter-spacing:2.5px; font-weight:600; text-transform:uppercase; }
+.tB .greet .hi { font-size:26px; font-weight:800; letter-spacing:-.5px; margin-top:4px; font-family:"Noto Serif SC","Songti SC",serif; }
+.tB .search {
+  margin:18px 24px 0; height:44px; display:flex; align-items:center; gap:10px;
+  border-bottom:1.5px solid #d8d8d4; color:#9a9aa2; font-size:13.5px; padding:0 2px;
+}
+.tB .sec-h {
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin:26px 24px 4px; font-size:16px; font-weight:800; letter-spacing:-.2px;
+}
+.tB .sec-h .more { font-size:11px; color:#8a8a92; font-weight:500; cursor:pointer; }
+.tB .blist { padding:0 24px; }
+.tB .bitem {
+  display:flex; gap:14px; align-items:center; padding:13px 0;
+  border-bottom:1px solid #ececea; cursor:pointer;
+}
+.tB .bitem .cov { width:44px; height:60px; border-radius:6px; }
+.tB .bitem .bi { flex:1; min-width:0; }
+.tB .bitem .bt { font-size:13.5px; font-weight:600; color:#1a1a1e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tB .bitem .bs { font-size:10.5px; color:#8a8a92; margin-top:3px; }
+.tB .bitem .bp { height:2px; background:#e6e6e2; margin-top:9px; border-radius:1px; overflow:hidden; }
+.tB .bitem .bp i { display:block; height:100%; background:#1a1a1e; }
+.tB .bitem .pct { font-size:10px; color:#8a8a92; font-variant-numeric:tabular-nums; }
+.tB .chips { display:flex; gap:9px; padding:10px 24px 0; flex-wrap:wrap; }
+.tB .chip {
+  font-size:11.5px; padding:7px 15px; border-radius:999px; color:#3a3a42;
+  border:1px solid #d8d8d4; font-weight:600; cursor:pointer; transition:.2s;
+}
+.tB .chip:hover { border-color:#1a1a1e; }
+.tB .chip.on { background:#1a1a1e; color:#fff; border-color:#1a1a1e; }
+.tB .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:12px 24px 0; }
+.tB .gc .cov { width:100%; height:132px; border-radius:8px; }
+.tB .gc .gt { font-size:11px; font-weight:600; margin-top:7px; line-height:1.4; color:#1a1a1e;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.tB .gc .gs { font-size:9.5px; color:#8a8a92; margin-top:2px; }
+.tB .navbar { background:rgba(250,250,248,.9); backdrop-filter:blur(14px); border-top:1px solid #e8e8e4; border-radius:0; left:0; right:0; bottom:0; }
+.tB .navitem { color:#9a9aa2; border-radius:0; gap:4px; }
+.tB .navitem.on { color:#1a1a1e; }
+.tB .navitem.on .nl { border-bottom:2px solid #1a1a1e; padding-bottom:1px; font-weight:700; }
+/* B 详情页 */
+.tB .dh { padding:52px 24px 0; }
+.tB .dh .top { display:flex; gap:18px; }
+.tB .dh .cov { width:104px; height:146px; border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,.14); }
+.tB .dh .dt { flex:1; padding-top:4px; }
+.tB .dh .dt .t { font-size:19px; font-weight:800; letter-spacing:-.3px; font-family:"Noto Serif SC",serif; line-height:1.35; }
+.tB .dh .dt .a { font-size:11px; color:#8a8a92; margin-top:6px; }
+.tB .dh .dt .r { font-size:11px; color:#1a1a1e; margin-top:10px; font-weight:700; letter-spacing:1px; }
+.tB .tagline { padding:16px 24px 0; font-size:11px; color:#8a8a92; line-height:1.9; }
+.tB .tagline b { color:#3a3a42; font-weight:600; }
+.tB .cta {
+  margin:22px 24px 0; height:50px; border-radius:4px; background:#1a1a1e; color:#fff;
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  font-size:14px; font-weight:700; letter-spacing:2px; cursor:pointer; transition:.2s;
+}
+.tB .cta:hover { background:#333; }
+.tB .dsec { margin:26px 24px 0; }
+.tB .dsec .sh { font-size:15px; font-weight:800; margin-bottom:6px; }
+.tB .dsec .desc { font-size:12px; color:#5a5a62; line-height:1.9; }
+.tB .ep {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:13px 2px; border-bottom:1px solid #ececea; font-size:12.5px; color:#1a1a1e;
+  cursor:pointer; font-weight:600;
+}
+.tB .ep .pg { font-size:10px; color:#8a8a92; font-weight:500; }
+
+/* ══════════════════════════════════════════
+   方案 C · 悦动材料 Expressive M3
+   ══════════════════════════════════════════ */
+.tC { background:#fdf8ff; color:#1c1b20; }
+.tC .statusbar { color:#1c1b20; }
+.tC .greet { padding:18px 20px 0; display:flex; align-items:center; justify-content:space-between; }
+.tC .greet .hi { font-size:23px; font-weight:800; letter-spacing:-.4px; }
+.tC .greet .avatar {
+  width:38px; height:38px; border-radius:16px 16px 6px 16px;
+  background:linear-gradient(135deg,#6750a4,#c26dbc);
+}
+.tC .search {
+  margin:16px 20px 0; height:54px; border-radius:28px;
+  background:#ece6f6; display:flex; align-items:center; gap:11px; padding:0 18px;
+  color:#5b5464; font-size:13.5px; font-weight:500;
+  box-shadow:0 1px 3px rgba(103,80,164,.10);
+}
+.tC .card {
+  background:#f3edf8; border-radius:24px 24px 24px 8px; position:relative;
+}
+.tC .sec-h {
+  display:flex; justify-content:space-between; align-items:center;
+  margin:22px 20px 10px;
+}
+.tC .sec-h .h {
+  font-size:15.5px; font-weight:800; display:flex; align-items:center; gap:8px;
+}
+.tC .sec-h .h::before {
+  content:""; width:5px; height:17px; border-radius:3px;
+  background:linear-gradient(180deg,#6750a4,#c26dbc);
+}
+.tC .sec-h .more { font-size:11px; color:#6750a4; font-weight:700; cursor:pointer; }
+.tC .row { display:flex; gap:12px; overflow-x:auto; scrollbar-width:none; padding:2px 20px 6px; }
+.tC .row::-webkit-scrollbar { display:none; }
+.tC .hcard { width:128px; padding:10px; flex-shrink:0; cursor:pointer; transition:.22s; }
+.tC .hcard:hover { transform:translateY(-2px); box-shadow:0 10px 24px rgba(103,80,164,.16); }
+.tC .hcard .cov { width:108px; height:132px; border-radius:18px 18px 18px 5px; }
+.tC .hcard .pt { font-size:11.5px; font-weight:700; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#1c1b20; }
+.tC .hcard .ps { font-size:9.5px; color:#6b6474; margin-top:2px; }
+.tC .hcard .pchip {
+  display:inline-flex; margin-top:8px; font-size:9px; font-weight:700;
+  background:#e8def8; color:#4a3a78; padding:3px 10px; border-radius:999px;
+}
+.tC .duo { display:flex; gap:12px; margin:0 20px; }
+.tC .big { flex:1; padding:16px; border-radius:24px; cursor:pointer; }
+.tC .big.v1 { background:linear-gradient(135deg,#6750a4,#8d5fc4); color:#fff; border-radius:24px 24px 8px 24px; }
+.tC .big.v2 { background:#e8def8; color:#31284d; }
+.tC .big .n { font-size:24px; font-weight:800; letter-spacing:-.5px; }
+.tC .big .l { font-size:10.5px; opacity:.82; margin-top:3px; font-weight:600; }
+.tC .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 20px; }
+.tC .gcard { padding:10px; cursor:pointer; }
+.tC .gcard .cov { width:100%; height:148px; border-radius:18px 18px 18px 5px; }
+.tC .gcard .gt { font-size:12px; font-weight:700; margin-top:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tC .gcard .gs { font-size:9.5px; color:#6b6474; margin-top:2px; }
+.tC .navbar { background:#f3edf8; border-radius:999px; box-shadow:0 8px 26px rgba(103,80,164,.18); }
+.tC .navitem { color:#6b6474; }
+.tC .navitem.on { background:#e8def8; color:#31284d; padding:6px 16px; border-radius:999px; }
+/* C 详情页 */
+.tC .dh { padding:20px 20px 0; display:flex; gap:16px; }
+.tC .dh .cov { width:116px; height:160px; border-radius:22px 22px 22px 7px; box-shadow:0 14px 34px rgba(103,80,164,.24); }
+.tC .dh .dt { flex:1; padding-top:6px; }
+.tC .dh .dt .t { font-size:18px; font-weight:800; letter-spacing:-.3px; line-height:1.4; }
+.tC .dh .dt .a { font-size:11px; color:#6b6474; margin-top:6px; }
+.tC .dh .dt .r { display:inline-flex; margin-top:10px; font-size:11px; font-weight:700; background:#e8def8; color:#4a3a78; padding:4px 11px; border-radius:999px; }
+.tC .chips { display:flex; gap:8px; padding:18px 20px 0; flex-wrap:wrap; }
+.tC .chip { font-size:11px; font-weight:700; color:#4a3a78; background:#e8def8; padding:7px 14px; border-radius:12px 12px 12px 4px; }
+.tC .cta {
+  margin:20px 20px 0; height:54px; border-radius:27px;
+  background:#6750a4; color:#fff; display:flex; align-items:center; justify-content:center; gap:9px;
+  font-size:15px; font-weight:700; box-shadow:0 10px 26px rgba(103,80,164,.35); cursor:pointer; transition:.2s;
+}
+.tC .cta:hover { transform:translateY(-1px); }
+.tC .cta2 { margin:10px 20px 0; height:46px; border-radius:23px; border:1.5px solid #cabfe0; color:#4a3a78;
+  display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; font-weight:700; cursor:pointer; }
+.tC .dsec { margin:24px 24px 0; }
+.tC .dsec .sh { font-size:15px; font-weight:800; margin-bottom:9px; display:flex; align-items:center; gap:8px; }
+.tC .dsec .sh::before { content:""; width:5px; height:16px; border-radius:3px; background:linear-gradient(180deg,#6750a4,#c26dbc); }
+.tC .dsec .desc { font-size:12px; color:#5b5464; line-height:1.9; }
+.tC .ep {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 16px; border-radius:16px 16px 16px 5px; margin-bottom:8px;
+  background:#f3edf8; font-size:12.5px; font-weight:600; color:#1c1b20; cursor:pointer;
+}
+.tC .ep:hover { background:#e8def8; }
+.tC .ep .pg { font-size:10px; color:#6b6474; }
+
+/* ══════════════════════════════════════════
+   方案 D · 影院沉浸 Cinema Dark
+   ══════════════════════════════════════════ */
+.tD { background:#060607; color:#f2f2f4; }
+.tD .statusbar { color:#f2f2f4; }
+.tD .hero { position:relative; height:296px; }
+.tD .hero .bgcov { position:absolute; inset:0; filter:blur(2px) saturate(1.15); transform:scale(1.15); }
+.tD .hero .vig { position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(6,6,7,.45),transparent 40%,rgba(6,6,7,.55) 72%,#060607); }
+.tD .hero .in { position:absolute; left:20px; right:20px; bottom:14px; z-index:3; }
+.tD .hero .cap { font-size:10px; letter-spacing:3px; color:#e5a84d; font-weight:700; }
+.tD .hero .t { font-size:26px; font-weight:800; letter-spacing:-.4px; margin-top:6px;
+  text-shadow:0 2px 18px rgba(0,0,0,.7); }
+.tD .hero .m { font-size:10.5px; color:#b8b8c0; margin-top:6px; display:flex; gap:8px; align-items:center; }
+.tD .hero .m .r { color:#e5a84d; font-weight:800; }
+.tD .hero .btns { display:flex; gap:10px; margin-top:13px; }
+.tD .play {
+  flex:1; height:44px; border-radius:10px; background:#e5484d; color:#fff;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  font-size:13.5px; font-weight:800; cursor:pointer; transition:.2s;
+}
+.tD .play:hover { background:#f0595e; }
+.tD .fav {
+  width:44px; height:44px; border-radius:10px; background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.16); backdrop-filter:blur(10px);
+  display:flex; align-items:center; justify-content:center; color:#f2f2f4; cursor:pointer;
+}
+.tD .sec-h {
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin:18px 20px 10px; font-size:15px; font-weight:800;
+}
+.tD .sec-h .more { font-size:11px; color:#8c8c96; font-weight:500; cursor:pointer; }
+.tD .row { display:flex; gap:11px; overflow-x:auto; scrollbar-width:none; padding:2px 20px 4px; }
+.tD .row::-webkit-scrollbar { display:none; }
+.tD .pcard { width:104px; flex-shrink:0; cursor:pointer; transition:.2s; }
+.tD .pcard:hover { transform:translateY(-2px); }
+.tD .pcard .cov { width:104px; height:146px; border-radius:10px; box-shadow:0 8px 22px rgba(0,0,0,.5); }
+.tD .pcard .pt { font-size:11px; font-weight:600; margin-top:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#e8e8ec; }
+.tD .pcard .pbar { height:2.5px; background:rgba(255,255,255,.14); margin-top:5px; border-radius:2px; overflow:hidden; }
+.tD .pcard .pbar i { display:block; height:100%; background:#e5484d; }
+.tD .plist { margin:0 20px; }
+.tD .ep {
+  display:flex; gap:12px; align-items:center; padding:9px 0; cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.tD .ep .num { width:20px; text-align:center; font-size:11px; color:#8c8c96; font-weight:700; font-variant-numeric:tabular-nums; }
+.tD .ep .et { flex:1; font-size:12.5px; font-weight:600; color:#e8e8ec; }
+.tD .ep .ed { font-size:10px; color:#8c8c96; margin-top:2px; font-weight:400; }
+.tD .ep .pg { font-size:10px; color:#8c8c96; }
+.tD .navbar {
+  background:rgba(10,10,12,.72); border:1px solid rgba(255,255,255,.10);
+  backdrop-filter:blur(20px); border-radius:999px;
+}
+.tD .navitem { color:#8c8c96; }
+.tD .navitem.on { color:#e5484d; }
+.tD .navitem.on svg { stroke-width:2.3; }
+/* D 详情页 */
+.tD .dh { position:relative; height:252px; }
+.tD .dh .bgcov { position:absolute; inset:0; filter:blur(26px) saturate(1.25) brightness(.6); transform:scale(1.25); }
+.tD .dh .vig { position:absolute; inset:0; background:linear-gradient(180deg,rgba(6,6,7,.3),rgba(6,6,7,.9) 80%,#060607); }
+.tD .dh .back {
+  position:absolute; top:42px; left:16px; width:34px; height:34px; border-radius:50%;
+  background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.2);
+  backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; color:#fff; z-index:3;
+}
+.tD .dh .in { position:absolute; left:20px; right:20px; bottom:10px; display:flex; gap:15px; z-index:3; }
+.tD .dh .cov { width:96px; height:134px; border-radius:12px; box-shadow:0 14px 36px rgba(0,0,0,.7); }
+.tD .dh .dt { flex:1; padding-top:16px; }
+.tD .dh .dt .t { font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.tD .dh .dt .a { font-size:11px; color:#b8b8c0; margin-top:5px; }
+.tD .dh .dt .r { font-size:11px; color:#e5a84d; margin-top:8px; font-weight:800; letter-spacing:.5px; }
+.tD .chips { display:flex; gap:7px; padding:14px 20px 0; flex-wrap:wrap; }
+.tD .chip { font-size:10.5px; padding:6px 13px; border-radius:8px; color:#c8c8d0;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); font-weight:600; }
+.tD .cta {
+  margin:16px 20px 0; height:48px; border-radius:12px; background:#e5484d;
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  color:#fff; font-size:14.5px; font-weight:800; cursor:pointer; transition:.2s;
+}
+.tD .cta:hover { background:#f0595e; }
+.tD .dsec { margin:20px 20px 0; }
+.tD .dsec .sh { font-size:15px; font-weight:800; margin-bottom:10px; }
+.tD .dsec .desc { font-size:11.5px; color:#a8a8b2; line-height:1.85; }
+
+/* ══════════════ 页脚 ══════════════ */
+.footer { text-align:center; color:#6a6f7c; font-size:12px; padding:40px 20px 0; line-height:1.8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>venera UI 方向提案</h1>
+  <p>四个风格差异明显的方向，每个都包含「首页 + 详情页」两个屏幕（可滚动预览）。<b>选中一个告诉我编号</b>，我会把这个方向的视觉语言完整落到 Flutter 代码里；也可以混搭（例如「A 的玻璃 + C 的首页卡片」）。</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-t="A"><i>A</i>星璃玻璃</button>
+  <button class="tab" data-t="B"><i>B</i>墨韵极简</button>
+  <button class="tab" data-t="C"><i>C</i>悦动材料</button>
+  <button class="tab" data-t="D"><i>D</i>影院沉浸</button>
+</div>
+
+<!-- ═══════════ A 星璃玻璃 ═══════════ -->
+<div class="proposal active" id="pA">
+  <div class="intro">
+    <div class="txt">
+      <h2>A · 星璃玻璃 <span style="font-size:13px;color:#8f94ff;font-weight:600">当前方向的强化版</span></h2>
+      <div class="sub">在暗色底上铺极光渐变光斑，所有卡片变成真正的悬浮玻璃（毛玻璃 + 细白描边 + 柔光投影），底部导航悬浮成胶囊。信息层级靠「玻璃深度」区分，整体像一块会呼吸的琉璃。</div>
+      <div class="tags"><span>重磨砂</span><span>暗色为主</span><span>渐变强调</span><span>悬浮胶囊导航</span><span>改动量：中</span></div>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="phone"><div class="screen tA">
+      <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="statusbar"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+        <div class="greet">
+          <div class="hi">晚上好，夜航星</div>
+          <div class="date">11 月 14 日 · 周六 · 已连续阅读 6 天</div>
+          <div class="avatar"></div>
+        </div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>搜索漫画、作者、标签…</div>
+        <div class="sec-h">继续阅读 <span class="more">全部 ›</span></div>
+        <div class="row">
+          <div class="glass hcard"><div class="cov c6"><span class="cn">星海航线</span></div><div class="pt">星海航线</div><div class="ps">第 42 话 · 刚刚</div><div class="pbar"><i style="width:64%"></i></div></div>
+          <div class="glass hcard"><div class="cov c2"><span class="cn">灰烬之约</span></div><div class="pt">灰烬之约</div><div class="ps">第 18 话 · 昨天</div><div class="pbar"><i style="width:31%"></i></div></div>
+          <div class="glass hcard"><div class="cov c3"><span class="cn">深夜文库</span></div><div class="pt">深夜文库</div><div class="ps">第 7 话 · 3 天前</div><div class="pbar"><i style="width:82%"></i></div></div>
+          <div class="glass hcard"><div class="cov c4"><span class="cn">琉璃工房</span></div><div class="pt">琉璃工房</div><div class="ps">第 25 话 · 上周</div><div class="pbar"><i style="width:12%"></i></div></div>
+        </div>
+        <div class="sec-h">收藏概览</div>
+        <div class="stats">
+          <div class="glass stat"><div class="dot d1"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div><div><div class="num">128</div><div class="lab">本地收藏</div></div></div>
+          <div class="glass stat"><div class="dot d2"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13.2 3 9.2 3 6.4 5.2 4 8 4c1.6 0 3 .8 4 2 1-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.2 0 4-4 7.3-9 11.8z"/></svg></div><div><div class="num">12</div><div class="lab">追更中</div></div></div>
+        </div>
+        <div class="sec-h">为你推荐 <span class="more">换一批</span></div>
+        <div class="grid">
+          <div class="glass gcard"><div class="cov c1"><span class="cn">月下交易</span><span class="sub">★ 4.8</span></div><div class="gt">月下交易</div><div class="gs">奇幻 · 214 话</div></div>
+          <div class="glass gcard"><div class="cov c5"><span class="cn">铁与羽</span><span class="sub">★ 4.6</span></div><div class="gt">铁与羽</div><div class="gs">热血 · 96 话</div></div>
+          <div class="glass gcard"><div class="cov c7"><span class="cn">春与夏的方程式</span><span class="sub">★ 4.9</span></div><div class="gt">春与夏的方程式</div><div class="gs">日常 · 48 话</div></div>
+          <div class="glass gcard"><div class="cov c8"><span class="cn">长夜漫步者</span><span class="sub">★ 4.7</span></div><div class="gt">长夜漫步者</div><div class="gs">悬疑 · 152 话</div></div>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="navitem on"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>首页</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13.2 3 9.2 3 6.4 5.2 4 8 4c1.6 0 3 .8 4 2 1-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.2 0 4-4 7.3-9 11.8z"/></svg><span>收藏</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span>探索</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg><span>分类</span></div>
+      </div>
+    </div></div>
+
+    <div class="phone"><div class="screen tA">
+      <div class="blob b1" style="top:40px"></div><div class="blob b2" style="top:420px;right:-70px"></div>
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="statusbar"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+        <div class="dh">
+          <div class="bg"><div class="bgcov c6"></div><div class="mask"></div></div>
+          <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></div>
+          <div class="cover c6"><span class="cn" style="font-size:12px">星海航线</span></div>
+        </div>
+        <div class="dtitle"><div class="t">星海航线</div><div class="m">苍蓝工作室 · 奇幻 / 冒险 · 214 话 · ★ 4.8</div></div>
+        <div class="chips"><span class="chip">太空歌剧</span><span class="chip">群像</span><span class="chip">已完结</span><span class="chip">简体内置</span></div>
+        <div class="cta"><svg class="ic" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>开始阅读 · 第 43 话</div>
+        <div class="dsec"><div class="sh">简介</div><div class="desc">人类离开地球的第 300 年，航线图上只剩最后一个未标名的坐标。领航员小满接到最后一单委托——护送一位失忆的少女回到「起点」。这是一部关于告别与抵达的太空群像剧。</div></div>
+        <div class="dsec"><div class="sh">章节</div></div>
+        <div class="dsec" style="margin-top:0">
+          <div class="glass ep"><span class="n">第 43 话 · 归航</span><span class="pg">36P</span></div>
+          <div class="glass ep"><span class="n">第 42 话 · 碎星带</span><span class="pg">30P</span></div>
+          <div class="glass ep"><span class="n">第 41 话 · 无声电波</span><span class="pg">28P</span></div>
+          <div class="glass ep"><span class="n">第 40 话 · 双人 beds</span><span class="pg">32P</span></div>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></div>
+        <div class="navitem on"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ═══════════ B 墨韵极简 ═══════════ -->
+<div class="proposal" id="pB">
+  <div class="intro">
+    <div class="txt">
+      <h2>B · 墨韵极简 <span style="font-size:13px;color:#8a8a92;font-weight:600">Linear / Notion 式克制</span></h2>
+      <div class="sub">去掉所有卡片和圆角堆叠，靠留白、字重层级与细分割线组织信息。列表化布局、衬线大标题、黑白灰 + 单一强调。适合长时间阅读不疲劳、把封面本身当装饰的克制审美。</div>
+      <div class="tags"><span>亮色为主</span><span>零卡片</span><span>排版驱动</span><span>衬线标题</span><span>改动量：大</span></div>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="phone"><div class="screen tB">
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="statusbar"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+        <div class="greet">
+          <div class="date">11月14日 · 周六</div>
+          <div class="hi">书架</div>
+        </div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>搜索…</div>
+        <div class="sec-h">继续阅读 <span class="more">全部</span></div>
+        <div class="blist">
+          <div class="bitem"><div class="cov c6"></div><div class="bi"><div class="bt">星海航线</div><div class="bs">第 42 话 · 碎星带</div><div class="bp"><i style="width:64%"></i></div></div><div class="pct">64%</div></div>
+          <div class="bitem"><div class="cov c2"></div><div class="bi"><div class="bt">灰烬之约</div><div class="bs">第 18 话 · 燃烧的桥</div><div class="bp"><i style="width:31%"></i></div></div><div class="pct">31%</div></div>
+          <div class="bitem"><div class="cov c3"></div><div class="bi"><div class="bt">深夜文库</div><div class="bs">第 7 话 · 便利店</div><div class="bp"><i style="width:82%"></i></div></div><div class="pct">82%</div></div>
+        </div>
+        <div class="sec-h">收藏夹 <span class="more">管理</span></div>
+        <div class="chips">
+          <span class="chip on">全部 128</span><span class="chip">追更 12</span><span class="chip">已完结 44</span><span class="chip">短篇 9</span>
+        </div>
+        <div class="sec-h">推荐 <span class="more">更多</span></div>
+        <div class="grid3">
+          <div class="gc"><div class="cov c1"></div><div class="gt">月下交易</div><div class="gs">★ 4.8 · 214话</div></div>
+          <div class="gc"><div class="cov c5"></div><div class="gt">铁与羽</div><div class="gs">★ 4.6 · 96话</div></div>
+          <div class="gc"><div class="cov c7"></div><div class="gt">春与夏的方程式</div><div class="gs">★ 4.9 · 48话</div></div>
+          <div class="gc"><div class="cov c8"></div><div class="gt">长夜漫步者</div><div class="gs">★ 4.7 · 152话</div></div>
+          <div class="gc"><div class="cov c4"></div><div class="gt">琉璃工房</div><div class="gs">★ 4.5 · 71话</div></div>
+          <div class="gc"><div class="cov c2"></div><div class="gt">灰烬之约</div><div class="gs">★ 4.4 · 33话</div></div>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="navitem on"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="nl">首页</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span class="nl">收藏</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span class="nl">探索</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg><span class="nl">分类</span></div>
+      </div>
+    </div></div>
+
+    <div class="phone"><div class="screen tB">
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="statusbar"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+        <div class="dh">
+          <div class="top">
+            <div class="cov c6"></div>
+            <div class="dt">
+              <div class="t">星海航线</div>
+              <div class="a">苍蓝工作室 · 214 话 · 已完结</div>
+              <div class="r">★ 4.8 &nbsp;(2,314)</div>
+            </div>
+          </div>
+          <div class="tagline"><b>奇幻</b> / <b>冒险</b> / <b>太空歌剧</b> / <b>群像</b> —— 人类离开地球的第 300 年，航线图上只剩最后一个未标名的坐标。</div>
+          <div class="cta"><svg class="ic" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>开始阅读</div>
+          <div class="dsec">
+            <div class="sh">简介</div>
+            <div class="desc">领航员小满接到最后一单委托——护送一位失忆的少女回到「起点」。这是一部关于告别与抵达的太空群像剧。全 214 话，已完结。</div>
+          </div>
+          <div class="dsec">
+            <div class="sh">章节</div>
+            <div class="ep"><span>第 43 话 · 归航</span><span>36P</span></div>
+            <div class="ep"><span>第 42 话 · 碎星带</span><span>30P</span></div>
+            <div class="ep"><span>第 41 话 · 无声电波</span><span>28P</span></div>
+            <div class="ep"><span>第 40 话 · 双人床位</span><span>32P</span></div>
+            <div class="ep"><span>第 39 话 · 旧地球来信</span><span>26P</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ═══════════ C 悦动材料 ═══════════ -->
+<div class="proposal" id="pC">
+  <div class="intro">
+    <div class="txt">
+      <h2>C · 悦动材料 <span style="font-size:13px;color:#a78bfa;font-weight:600">Material 3 Expressive</span></h2>
+      <div class="sub">Google 最新 Expressive 语言：大圆角 + 单切角造型（三个圆角一个直角）、饱满的 tonal 色块、加大的触控目标。明快、友好、有弹性，跟主题色联动最强。</div>
+      <div class="tags"><span>亮色活泼</span><span>单切角造型</span><span>tonal 色块</span><span>跟主题色联动</span><span>改动量：中</span></div>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="phone"><div class="screen tC">
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="statusbar"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+        <div class="greet">
+          <div class="hi">晚上好 👋</div>
+          <div class="avatar"></div>
+        </div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>搜索漫画、作者、标签</div>
+        <div class="sec-h"><span class="h">继续阅读</span><span class="more">全部 ›</span></div>
+        <div class="row">
+          <div class="card hcard"><div class="cov c6"><span class="cn">星海航线</span></div><div class="pt">星海航线</div><div class="ps">第 42 话</div><span class="pchip">64%</span></div>
+          <div class="card hcard"><div class="cov c2"><span class="cn">灰烬之约</span></div><div class="pt">灰烬之约</div><div class="ps">第 18 话</div><span class="pchip">31%</span></div>
+          <div class="card hcard"><div class="cov c3"><span class="cn">深夜文库</span></div><div class="pt">深夜文库</div><div class="ps">第 7 话</div><span class="pchip">82%</span></div>
+          <div class="card hcard"><div class="cov c4"><span class="cn">琉璃工房</span></div><div class="pt">琉璃工房</div><div class="ps">第 25 话</div><span class="pchip">12%</span></div>
+        </div>
+        <div class="sec-h"><span class="h">我的收藏</span><span class="more">管理 ›</span></div>
+        <div class="duo">
+          <div class="big v1"><div class="n">128</div><div class="l">本地收藏</div></div>
+          <div class="big v2"><div class="n">12</div><div class="l">追更中 · 2 部有更新</div></div>
+        </div>
+        <div class="sec-h"><span class="h">为你推荐</span><span class="more">换一批 ›</span></div>
+        <div class="grid">
+          <div class="card gcard"><div class="cov c1"><span class="cn">月下交易</span></div><div class="gt">月下交易</div><div class="gs">奇幻 · 214 话</div></div>
+          <div class="card gcard"><div class="cov c5"><span class="cn">铁与羽</span></div><div class="gt">铁与羽</div><div class="gs">热血 · 96 话</div></div>
+          <div class="card gcard"><div class="cov c7"><span class="cn">春与夏的方程式</span></div><div class="gt">春与夏的方程式</div><div class="gs">日常 · 48 话</div></div>
+          <div class="card gcard"><div class="cov c8"><span class="cn">长夜漫步者</span></div><div class="gt">长夜漫步者</div><div class="gs">悬疑 · 152 话</div></div>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="navitem on"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>首页</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>收藏</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span>探索</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg><span>分类</span></div>
+      </div>
+    </div></div>
+
+    <div class="phone"><div class="screen tC">
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="statusbar"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+        <div class="dh">
+          <div class="cov c6"><span class="cn" style="font-size:12px">星海航线</span></div>
+          <div class="dt">
+            <div class="t">星海航线</div>
+            <div class="a">苍蓝工作室 · 214 话 · 已完结</div>
+            <div class="r">★ 4.8</div>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip">奇幻</span><span class="chip">冒险</span><span class="chip">太空歌剧</span><span class="chip">群像</span>
+        </div>
+        <div class="cta"><svg class="ic" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>继续阅读 · 第 43 话</div>
+        <div class="cta2"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>下载全部章节</div>
+        <div class="dsec">
+          <div class="sh">简介</div>
+          <div class="desc">人类离开地球的第 300 年，航线图上只剩最后一个未标名的坐标。领航员小满接到最后一单委托——护送一位失忆的少女回到「起点」。</div>
+        </div>
+        <div class="dsec">
+          <div class="sh">章节</div>
+          <div class="ep"><span>第 43 话 · 归航</span><span>36P</span></div>
+          <div class="ep"><span>第 42 话 · 碎星带</span><span>30P</span></div>
+          <div class="ep"><span>第 41 话 · 无声电波</span><span>28P</span></div>
+          <div class="ep"><span>第 40 话 · 双人床位</span><span>32P</span></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ═══════════ D 影院沉浸 ═══════════ -->
+<div class="proposal" id="pD">
+  <div class="intro">
+    <div class="txt">
+      <h2>D · 影院沉浸 <span style="font-size:13px;color:#e5484d;font-weight:600">封面即世界</span></h2>
+      <div class="sub">纯黑沉浸：首页顶部一整块封面 hero 大图（封面放大做背景 + 暗角渐变 + 大标题直压在图上），内容区全是海报墙。像 Netflix 一样「封面即界面」，把漫画封面本身当作最大视觉资产。</div>
+      <div class="tags"><span>纯黑</span><span>大图 hero</span><span>海报墙</span><span>封面沉浸</span><span>改动量：大</span></div>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="phone"><div class="screen tD">
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="hero">
+          <div class="bgcov c6"></div><div class="vig"></div>
+          <div class="statusbar" style="position:absolute;top:0;left:0;right:0"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="in">
+            <div class="cap">最近在读</div>
+            <div class="t">星海航线</div>
+            <div class="m"><span class="r">★ 4.8</span><span>奇幻 · 冒险</span><span>读到 64%</span></div>
+            <div class="btns">
+              <div class="play"><svg class="ic" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>继续阅读</div>
+              <div class="fav"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="sec-h">继续阅读 <span class="more">全部</span></div>
+        <div class="row">
+          <div class="pcard"><div class="cov c2"><span class="cn">灰烬之约</span></div><div class="pt">灰烬之约</div><div class="pbar"><i style="width:31%"></i></div></div>
+          <div class="pcard"><div class="cov c3"><span class="cn">深夜文库</span></div><div class="pt">深夜文库</div><div class="pbar"><i style="width:82%"></i></div></div>
+          <div class="pcard"><div class="cov c4"><span class="cn">琉璃工房</span></div><div class="pt">琉璃工房</div><div class="pbar"><i style="width:12%"></i></div></div>
+          <div class="pcard"><div class="cov c5"><span class="cn">铁与羽</span></div><div class="pt">铁与羽</div><div class="pbar"><i style="width:47%"></i></div></div>
+        </div>
+        <div class="sec-h">本周更新 <span class="more">更多</span></div>
+        <div class="row">
+          <div class="pcard"><div class="cov c7"><span class="cn">春与夏的方程式</span><span class="sub">新话</span></div><div class="pt">春与夏的方程式</div><div class="pbar"><i style="width:0%"></i></div></div>
+          <div class="pcard"><div class="cov c8"><span class="cn">长夜漫步者</span><span class="sub">新话</span></div><div class="pt">长夜漫步者</div><div class="pbar"><i style="width:0%"></i></div></div>
+          <div class="pcard"><div class="cov c1"><span class="cn">月下交易</span><span class="sub">新话</span></div><div class="pt">月下交易</div><div class="pbar"><i style="width:0%"></i></div></div>
+          <div class="pcard"><div class="cov c3"><span class="cn">深夜文库</span><span class="sub">新话</span></div><div class="pt">深夜文库</div><div class="pbar"><i style="width:0%"></i></div></div>
+        </div>
+        <div class="sec-h">章节速览 · 星海航线</div>
+        <div class="plist">
+          <div class="ep"><span class="num">43</span><div><div class="et">归航</div><div class="ed">36 页 · 今天更新</div></div><span class="pg">未读</span></div>
+          <div class="ep"><span class="num">42</span><div><div class="et">碎星带</div><div class="ed">30 页</div></div><span class="pg">64%</span></div>
+          <div class="ep"><span class="num">41</span><div><div class="et">无声电波</div><div class="ed">28 页</div></div><span class="pg">已读</span></div>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="navitem on"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>首页</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>收藏</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span>探索</span></div>
+        <div class="navitem"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg><span>分类</span></div>
+      </div>
+    </div></div>
+
+    <div class="phone"><div class="screen tD">
+      <div class="notch"></div>
+      <div class="scroll">
+        <div class="dh">
+          <div class="bgcov c6"></div><div class="vig"></div>
+          <div class="statusbar" style="position:absolute;top:0;left:0;right:0;z-index:4"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></div>
+          <div class="in">
+            <div class="cov c6"><span class="cn" style="font-size:11px">星海航线</span></div>
+            <div class="dt">
+              <div class="t">星海航线</div>
+              <div class="a">苍蓝工作室 · 214 话 · 已完结</div>
+              <div class="r">★ 4.8 &nbsp;·&nbsp; 2.3k 评分</div>
+            </div>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip">奇幻</span><span class="chip">冒险</span><span class="chip">太空歌剧</span><span class="chip">群像</span><span class="chip">已完结</span>
+        </div>
+        <div class="cta"><svg class="ic" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>继续阅读 · 第 42 话</div>
+        <div class="dsec">
+          <div class="sh">简介</div>
+          <div class="desc">人类离开地球的第 300 年，航线图上只剩最后一个未标名的坐标。领航员小满接到最后一单委托——护送一位失忆的少女回到「起点」。这是一部关于告别与抵达的太空群像剧。</div>
+        </div>
+        <div class="dsec">
+          <div class="sh">章节</div>
+        </div>
+        <div class="plist">
+          <div class="ep"><span class="num">43</span><div><div class="et">归航</div><div class="ed">36 页</div></div><span class="pg">未读</span></div>
+          <div class="ep"><span class="num">42</span><div><div class="et">碎星带</div><div class="ed">30 页</div></div><span class="pg">64%</span></div>
+          <div class="ep"><span class="num">41</span><div><div class="et">无声电波</div><div class="ed">28 页</div></div><span class="pg">已读</span></div>
+          <div class="ep"><span class="num">40</span><div><div class="et">双人床位</div><div class="ed">32 页</div></div><span class="pg">已读</span></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="footer">
+  提案均为静态高保真示意（渐变色块代漫画封面）· 选中后按方向落到 Flutter 代码，可整选或混搭<br>
+  示例文案与封面均为占位内容
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.proposal').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('p' + btn.dataset.t).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+</script>
+</body>
+</html>

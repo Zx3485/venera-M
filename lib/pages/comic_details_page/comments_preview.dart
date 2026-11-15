@@ -83,7 +83,7 @@ class _CommentsPartState extends State<_CommentsPart> {
                 icon: const Icon(Icons.comment),
                 text: "View more".tl,
                 onPressed: widget.showMore,
-                iconColor: context.useTextColor(Colors.green),
+                iconColor: context.useTextColor(kSoftGreen),
               ).fixHeight(48).paddingRight(8).toAlign(Alignment.centerRight),
               const SizedBox(height: 8),
             ],
@@ -111,7 +111,7 @@ class _CommentWidget extends StatelessWidget {
       width: 324,
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: kCorner(context, scale: 0.6),
       ),
       child: Column(
         children: [
@@ -122,7 +122,7 @@ class _CommentWidget extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: kCorner(context, scale: 0.8),
                     color: context.colorScheme.surfaceContainer,
                   ),
                   clipBehavior: Clip.antiAlias,

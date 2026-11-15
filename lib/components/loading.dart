@@ -156,11 +156,7 @@ abstract class LoadingState<T extends StatefulWidget, S extends Object>
   Widget? buildFrame(BuildContext context, Widget child) => null;
 
   Widget buildLoading() {
-    return Center(
-      child: const CircularProgressIndicator(
-        strokeWidth: 2,
-      ).fixWidth(32).fixHeight(32),
-    );
+    return const Center(child: FiveDotLoadingAnimation());
   }
 
   void retry() {
@@ -321,9 +317,7 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
   }
 
   Widget buildLoading(BuildContext context) {
-    return Center(
-      child: const CircularProgressIndicator().fixWidth(32).fixHeight(32),
-    );
+    return const Center(child: FiveDotLoadingAnimation());
   }
 
   Widget buildError(BuildContext context, String error) {
@@ -383,13 +377,18 @@ class _FiveDotLoadingAnimationState extends State<FiveDotLoadingAnimation>
     super.dispose();
   }
 
-  static const _colors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.yellow,
-    Colors.purple,
-  ];
+  /// 主题色渐变：primary → tertiary 的五级插值，
+  /// 替代原来的彩虹硬编码色，任何主题下都协调。
+  List<Color> _dotColors(BuildContext context) {
+    final scheme = context.colorScheme;
+    return [
+      scheme.primary,
+      Color.lerp(scheme.primary, scheme.tertiary, 0.25)!,
+      Color.lerp(scheme.primary, scheme.tertiary, 0.5)!,
+      Color.lerp(scheme.primary, scheme.tertiary, 0.75)!,
+      scheme.tertiary,
+    ];
+  }
 
   static const _padding = 12.0;
 
@@ -399,19 +398,21 @@ class _FiveDotLoadingAnimationState extends State<FiveDotLoadingAnimation>
 
   @override
   Widget build(BuildContext context) {
+    final colors = _dotColors(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return SizedBox(
           width: _dotSize * 5 + _padding * 6,
           height: _height,
-          child: Stack(children: List.generate(5, (index) => buildDot(index))),
+          child:
+              Stack(children: List.generate(5, (index) => buildDot(index, colors))),
         );
       },
     );
   }
 
-  Widget buildDot(int index) {
+  Widget buildDot(int index, List<Color> colors) {
     var value = _controller.value;
     var startValue = index * 0.8;
     return Positioned(
@@ -423,7 +424,7 @@ class _FiveDotLoadingAnimationState extends State<FiveDotLoadingAnimation>
         width: _dotSize,
         height: _dotSize,
         decoration: BoxDecoration(
-          color: _colors[index],
+          color: colors[index],
           shape: BoxShape.circle,
         ),
       ),

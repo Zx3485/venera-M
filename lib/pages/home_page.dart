@@ -9,6 +9,7 @@ import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/consts.dart';
 import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/history.dart';
+import 'package:venera/foundation/image_provider/history_image_provider.dart';
 import 'package:venera/foundation/home_sections.dart';
 import 'package:venera/foundation/local.dart';
 import 'package:venera/foundation/log.dart';
@@ -76,11 +77,12 @@ class _HomePageState extends State<HomePage> {
     var widget = SmoothCustomScrollView(
       slivers: [
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
+        const SliverToBoxAdapter(child: _GreetHeader()),
         if (sections.isEmpty)
           const SliverToBoxAdapter(child: _EmptyHomeHint())
         else
           ...sections.map(buildSection),
-        SliverPadding(padding: EdgeInsets.only(top: context.padding.bottom)),
+        // 底部余量由 SmoothCustomScrollView 统一追加，这里不再重复
       ],
     );
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
@@ -99,10 +101,13 @@ class _EmptyHomeHint extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       decoration: BoxDecoration(
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
-        ),
-        borderRadius: BorderRadius.circular(8),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withValues(alpha: 0.5),
+                  width: kBorderHairline,
+                ),
+                borderRadius: kBRS,
       ),
       child: Column(
         children: [
@@ -134,25 +139,32 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 下划线式搜索条，和杂志排版一致（不是胶囊、不是卡片）。
+    var dim = context.colorScheme.onSurfaceVariant;
     return SliverToBoxAdapter(
       child: Container(
-        height: App.isMobile ? 52 : 46,
+        height: 48,
         width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Material(
-          color: context.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(32),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(32),
-            onTap: () {
-              context.to(() => const SearchPage());
-            },
+        margin: const EdgeInsets.fromLTRB(kPageInset, 14, kPageInset, 6),
+        child: InkWell(
+          onTap: () {
+            context.to(() => const SearchPage());
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: context.colorScheme.outlineVariant.withValues(alpha: 0.55),
+                  width: kRuleHair,
+                ),
+              ),
+            ),
             child: Row(
               children: [
-                const SizedBox(width: 16),
-                const Icon(Icons.search),
-                const SizedBox(width: 8),
-                Text('Search'.tl, style: ts.s16),
+                const SizedBox(width: 4),
+                Icon(Icons.search, size: 20, color: dim),
+                const SizedBox(width: 10),
+                Text('Search'.tl, style: TextStyle(fontSize: 14, color: dim)),
                 const Spacer(),
               ],
             ),
@@ -188,9 +200,9 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
 
   @override
   void dispose() {
-    super.dispose();
     DataSync().removeListener(update);
     WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   late DateTime lastCheck;
@@ -208,90 +220,122 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
     Widget child;
     if (!DataSync().isEnabled) {
       child = const SliverPadding(padding: EdgeInsets.zero);
-    } else if (DataSync().isUploading || DataSync().isDownloading) {
-      child = SliverToBoxAdapter(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.sync),
-            title: Text('Syncing Data'.tl),
-            trailing: const CircularProgressIndicator(strokeWidth: 2)
-                .fixWidth(18)
-                .fixHeight(18),
-          ),
-        ),
-      );
     } else {
+      final busy = DataSync().isUploading || DataSync().isDownloading;
+      // 杂志式：不再是一个描边圆角容器，而是「上下 hairline 夹一行」。
+      // 左边一个状态标记（同步中转圈 / 空闲灰点 / 出错红点），
+      // 中间是文字，右边两个图标按钮。
       child = SliverToBoxAdapter(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.sync),
-            title: Text('Sync Data'.tl),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (DataSync().lastError != null)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      showDialogMessage(
-                        App.rootContext,
-                        "Error".tl,
-                        DataSync().lastError!,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 4),
-                          Text('Error'.tl, style: ts.s12),
-                        ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(kPageInset, 0, kPageInset, 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HairRule(),
+              SizedBox(
+                height: 52,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Center(
+                        child: busy
+                            ? SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.6,
+                                  color: kRustColor(context),
+                                ),
+                              )
+                            : Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: DataSync().lastError != null
+                                      ? scheme.error
+                                      : scheme.onSurfaceVariant
+                                          .withValues(alpha: 0.4),
+                                ),
+                              ),
                       ),
                     ),
-                  ).paddingRight(4),
-                IconButton(
-                  icon: const Icon(Icons.cloud_upload_outlined),
-                  onPressed: () async {
-                    DataSync().uploadData();
-                  },
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        busy ? 'Syncing Data'.tl : 'Sync Data'.tl,
+                        style: TextStyle(
+                          fontSize: 13,
+                          letterSpacing: 0.4,
+                          fontWeight: FontWeight.w600,
+                          color: busy
+                              ? scheme.onSurface
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    if (!busy && DataSync().lastError != null)
+                      InkWell(
+                        onTap: () {
+                          showDialogMessage(
+                            App.rootContext,
+                            "Error".tl,
+                            DataSync().lastError!,
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: scheme.error,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Error'.tl,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: scheme.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (!busy) ...[
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 19,
+                        color: scheme.onSurfaceVariant,
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        onPressed: () async {
+                          DataSync().uploadData();
+                        },
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 19,
+                        color: scheme.onSurfaceVariant,
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        onPressed: () async {
+                          DataSync().downloadData();
+                        },
+                      ),
+                    ],
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.cloud_download_outlined),
-                  onPressed: () async {
-                    DataSync().downloadData();
-                  },
-                ),
-              ],
-            ),
+              ),
+              HairRule(),
+            ],
           ),
         ),
       );
@@ -339,76 +383,128 @@ class _HistoryState extends State<_History> {
 
   @override
   Widget build(BuildContext context) {
+    // 没有历史记录时整个板块隐藏，不渲染可点击的空头部
+    if (history.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    final rows = history.take(5).toList();
     return SliverToBoxAdapter(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SectionHead(
+            'Continue Reading'.tl,
+            trailing: 'View more'.tl,
+            onTap: () => context.to(() => const HistoryPage()),
+            padding: const EdgeInsets.fromLTRB(26, 28, 26, 10),
           ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            context.to(() => const HistoryPage());
-          },
+          // 编号目录：01 / 02 / 03 + 衬线书名 + 细分割线 + 右侧小封面。
+          // 和原来的「封面在左、标题在右」列表相比，重心从图挪到了字。
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 26),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HairRule(),
+                for (var i = 0; i < rows.length; i++) ...[
+                  _buildRow(context, rows[i], i + 1),
+                  HairRule(),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow(BuildContext context, History h, int index) {
+    final maxPage = h.maxPage ?? 0;
+    final progress = maxPage > 0 ? (h.page / maxPage).clamp(0.0, 1.0) : 0.0;
+    final ep = h.ep > 1 ? "第 ${h.ep} 话 · " : "";
+    final sub = "$ep${(progress * 100).round()}%";
+    final heroID = h.id.hashCode;
+
+    Widget cover = EditorialCover(
+      child: AnimatedImage(
+        image: HistoryImageProvider(h),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      ),
+    );
+
+    return TOCEntry(
+      index: index.toString().padLeft(2, '0'),
+      title: h.title.replaceAll('\n', ''),
+      subtitle: sub,
+      // 最近在读的那本打一个钢红点，取代原来「整行加粗」
+      dot: index == 1,
+      cover: Hero(tag: "cover$heroID", child: cover),
+      onTap: () {
+        context.to(
+          () => ComicPage(
+            id: h.id,
+            sourceKey: h.type.sourceKey,
+            cover: h.cover,
+            title: h.title,
+            heroID: heroID,
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 杂志式页头：报头（品牌 + 操作图标 + 粗横线）+ 日期小标 + 衬线大标题。
+///
+/// 原来是「朱砂圆点 + 日期 + 27sp 问候语」，层级全靠字号。
+/// 现在用了三层不同的排版语言：全大写宽字距的报头、列间距的小字标、
+/// 以及 37sp 的衬线大标题——这是杂志排版最核心的节奏。
+class _GreetHeader extends StatelessWidget {
+  const _GreetHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    var now = DateTime.now();
+    var hi = now.hour < 5
+        ? 'Late night reading'.tl
+        : now.hour < 11
+            ? 'Good morning'.tl
+            : now.hour < 14
+                ? 'Good noon'.tl
+                : now.hour < 18
+                    ? 'Good afternoon'.tl
+                    : 'Good evening'.tl;
+    const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    // 注意：本组件由外层 SliverToBoxAdapter(child: _GreetHeader()) 包裹，
+    // 这里必须返回 Box 组件，不能再返回 Sliver（Sliver 进 Box 上下文
+    // 会在运行时装配 RenderObject 时崩溃，analyze 查不出来）。
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 报头只放品牌字和粗横线，不放操作图标：
+        // 搜索已经是独立的可开关板块（home_section_defs 里 search 默认开），
+        // 这里再放一个会变成两个搜索入口。
+        const Masthead(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(26, 22, 26, 0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 56,
-                child: Row(
-                  children: [
-                    Center(
-                      child: Text('History'.tl, style: ts.s18),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(count.toString(), style: ts.s12),
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.arrow_right),
-                  ],
-                ),
-              ).paddingHorizontal(16),
-              if (history.isNotEmpty)
-                SizedBox(
-                  height: 136,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: history.length,
-                    itemBuilder: (context, index) {
-                      final heroID = history[index].id.hashCode;
-                      return SimpleComicTile(
-                        comic: history[index],
-                        heroID: heroID,
-                        onTap: () {
-                          context.to(
-                            () => ComicPage(
-                              id: history[index].id,
-                              sourceKey: history[index].type.sourceKey,
-                              cover: history[index].cover,
-                              title: history[index].title,
-                              heroID: heroID,
-                            ),
-                          );
-                        },
-                      ).paddingHorizontal(8).paddingVertical(2);
-                    },
-                  ),
-                ).paddingHorizontal(8).paddingBottom(16),
+              Kicker(
+                "${now.month} 月 ${now.day} 日 · ${weekdays[now.weekday - 1].tl}",
+                size: 10,
+                tracking: kKickerTracking,
+                weight: FontWeight.w600,
+              ),
+              const SizedBox(height: 14),
+              DisplayTitle(hi),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -425,6 +521,9 @@ class _LocalState extends State<_Local> {
   late int count;
 
   void onLocalComicsChange() {
+    if (!mounted) {
+      return;
+    }
     setState(() {
       local = LocalManager().getRecent();
       count = LocalManager().count;
@@ -450,15 +549,9 @@ class _LocalState extends State<_Local> {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
+        
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           onTap: () {
             context.to(() => const LocalComicsPage());
           },
@@ -470,20 +563,13 @@ class _LocalState extends State<_Local> {
                 child: Row(
                   children: [
                     Center(
-                      child: Text('Local'.tl, style: ts.s18),
+                      child: Text('Local'.tl, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                     ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(count.toString(), style: ts.s12),
-                    ),
+                    Text('· $count',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: context.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600)),
                     const Spacer(),
                     const Icon(Icons.arrow_right),
                   ],
@@ -775,15 +861,9 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
+        
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           onTap: () {
             context.to(() => const ComicSourcePage());
           },
@@ -795,7 +875,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                 child: Row(
                   children: [
                     Center(
-                      child: Text('Comic Source'.tl, style: ts.s18),
+                      child: Text('Comic Source'.tl, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                     ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -803,7 +883,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: kCorner(context, scale: 0.45),
                       ),
                       child:
                           Text(comicSources.length.toString(), style: ts.s12),
@@ -826,7 +906,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                         decoration: BoxDecoration(
                           color:
                               Theme.of(context).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: kCorner(context, scale: 0.45),
                         ),
                         child: Text(e),
                       );
@@ -841,10 +921,10 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: context.colorScheme.outlineVariant,
-                      width: 0.6,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
+            color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: kBorderHairline,
+          ),
+                    borderRadius: kCorner(context, scale: 0.6),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -978,15 +1058,9 @@ class _ImageFavoritesState extends State<ImageFavorites> {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
+        
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           onTap: () {
             context.to(
               () => const ImageFavoritesPage()
@@ -1000,7 +1074,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
                 child: Row(
                   children: [
                     Center(
-                      child: Text('Image Favorites'.tl, style: ts.s18),
+                      child: Text('Image Favorites'.tl, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                     ),
                     if (hasData)
                       Container(
@@ -1010,7 +1084,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
                         decoration: BoxDecoration(
                           color:
                               Theme.of(context).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: kCorner(context, scale: 0.45),
                         ),
                         child: Text(
                           imageFavoritesCompute!.count.toString(),
@@ -1074,8 +1148,11 @@ class _ImageFavoritesState extends State<ImageFavorites> {
           color:
               displayType == type ? context.colorScheme.primaryContainer : null,
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.5),
+            width: kBorderHairline,
           ),
           borderRadius: BorderRadius.circular(radius),
         ),
@@ -1178,7 +1255,7 @@ class __ChartLineState extends State<_ChartLine>
     return Row(
       children: [
         InkWell(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: kCorner(context, scale: 0.3),
           onTap: () {
             widget.onTap?.call(widget.text);
           },
@@ -1203,17 +1280,17 @@ class __ChartLineState extends State<_ChartLine>
                   width: width * _controller.value,
                   height: 18,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: kCorner(context, scale: 0.25),
                     gradient: LinearGradient(
-                      colors: context.isDarkMode
-                          ? [
-                              Colors.blue.shade800,
-                              Colors.blue.shade500,
-                            ]
-                          : [
-                              Colors.blue.shade300,
-                              Colors.blue.shade600,
-                            ],
+                      // 主题色渐变：亮色端向白/黑插值，保证深浅主题都有层次
+                      colors: [
+                        Color.lerp(
+                          context.colorScheme.primary,
+                          context.isDarkMode ? Colors.black : Colors.white,
+                          0.22,
+                        )!,
+                        context.colorScheme.primary,
+                      ],
                     ),
                   ),
                 ).toAlign(Alignment.centerLeft);

@@ -133,9 +133,9 @@ class _ShelfCardState extends State<_ShelfCard> {
       decoration: BoxDecoration(
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
+          width: kBorderHairline,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kCorner(context),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -153,7 +153,7 @@ class _ShelfCardState extends State<_ShelfCard> {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: kCorner(context, scale: 0.6),
                   ),
                   child: Text(comics.length.toString(), style: ts.s12),
                 ),
@@ -321,9 +321,9 @@ class _EmptyShelvesCard extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
+          width: kBorderHairline,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kCorner(context),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

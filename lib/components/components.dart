@@ -47,6 +47,7 @@ part 'scroll.dart';
 part 'select.dart';
 part 'side_bar.dart';
 part 'comic.dart';
+part 'editorial.dart';
 part 'effects.dart';
 part 'glass.dart';
 part 'gesture.dart';

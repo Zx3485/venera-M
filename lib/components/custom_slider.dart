@@ -170,7 +170,8 @@ class _CustomSliderState extends State<CustomSlider> {
                                   width: 4,
                                   height: 4,
                                   decoration: BoxDecoration(
-                                    color: colorScheme.surface.withRed(10),
+                                    color: colorScheme.onSurfaceVariant
+                                        .toOpacity(0.55),
                                     shape: BoxShape.circle,
                                   ),
                                 ));

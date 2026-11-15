@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>venera 重设计 v2 · 三个结构方向</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#0a0a0b;color:#e8e8ea;padding-bottom:80px;
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.serif{font-family:"Noto Serif SC","Songti SC","SimSun",Georgia,serif;}
+.mono{font-family:"SF Mono","JetBrains Mono",Consolas,monospace;font-variant-numeric:tabular-nums;}
+
+/* ───── 页头 ───── */
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+header{padding:56px 0 20px;}
+header h1{font-size:27px;font-weight:700;letter-spacing:-.5px;}
+header .sub{color:#8b8b95;font-size:13.5px;line-height:1.85;margin-top:12px;max-width:760px;}
+header .sub b{color:#dcdce0;font-weight:600;}
+header .sub em{color:#e8a598;font-style:normal;}
+.bar{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap;align-items:center;}
+.sw{display:flex;border:1px solid rgba(255,255,255,.14);border-radius:999px;overflow:hidden;}
+.sw button{
+  border:none;background:transparent;color:#8b8b95;padding:10px 22px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:.18s;font-family:inherit;
+}
+.sw button:hover{color:#dcdce0;}
+.sw button.on{background:#f0f0ee;color:#101013;}
+.tbtn{
+  border:1px solid rgba(255,255,255,.14);background:transparent;color:#8b8b95;
+  padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:.18s;
+}
+.tbtn:hover{border-color:rgba(255,255,255,.3);color:#dcdce0;}
+
+/* ───── 方向区块 ───── */
+.dir{padding:34px 0 10px;display:none;}
+.dir.show{display:block;}
+.dirhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
+.dirhead .tag{
+  font-size:11px;font-weight:800;letter-spacing:2px;padding:4px 9px;
+  border-radius:6px;background:#1d1d21;color:#a0a0aa;border:1px solid rgba(255,255,255,.1);
+}
+.dirhead h2{font-size:21px;font-weight:700;}
+.dirhead .en{color:#6f6f79;font-size:12px;letter-spacing:2.5px;text-transform:uppercase;}
+.dirhead p.desc{color:#9a9aa4;font-size:13.5px;line-height:1.85;max-width:900px;margin:12px 0 4px;}
+.dirhead p.desc b{color:#e2e2e6;font-weight:600;}
+
+.stage{display:flex;gap:34px;justify-content:flex-start;flex-wrap:wrap;padding:26px 0 6px;}
+
+/* ───── 手机外壳 ───── */
+.phone{
+  width:322px;height:664px;flex-shrink:0;border-radius:46px;padding:7px;
+  background:#191a1e;border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 26px 64px rgba(0,0,0,.62),inset 0 0 0 2px #000;
+  position:relative;
+}
+.screen{position:absolute;inset:7px;border-radius:39px;overflow:hidden;isolation:isolate;}
+.notch{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:86px;height:21px;border-radius:11px;background:#000;z-index:60;}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
+.scroll::-webkit-scrollbar{display:none;}
+.cap{
+  text-align:center;color:#6c6c76;font-size:11.5px;margin-top:14px;letter-spacing:.3px;
+}
+.cap b{color:#a8a8b2;font-weight:600;}
+
+/* 状态栏 */
+.sb{display:flex;justify-content:space-between;padding:13px 24px 4px;font-size:12px;font-weight:600;position:relative;z-index:40;letter-spacing:.2px;}
+
+/* ───── 通用封面渐变 ───── */
+.cv{border-radius:8px;overflow:hidden;position:relative;background:#222;}
+.cv::after{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.055) 0 1px,transparent 1px 5px);
+  mix-blend-mode:overlay;
+}
+.c1{background:linear-gradient(150deg,#3d4a6b,#1b2233 60%,#12161f);}
+.c2{background:linear-gradient(155deg,#6b3d3d,#33201b 60%,#1f1412);}
+.c3{background:linear-gradient(160deg,#2f5e56,#182f2b 60%,#101f1c);}
+.c4{background:linear-gradient(145deg,#5f4a72,#2e2338 60%,#1b1522);}
+.c5{background:linear-gradient(150deg,#75603a,#3a2f1c 60%,#211b11);}
+.c6{background:linear-gradient(155deg,#3a5b78,#1e2f3d 60%,#121c26);}
+.c7{background:linear-gradient(160deg,#7a4258,#3c1f2b 60%,#22121a);}
+.c8{background:linear-gradient(150deg,#4a6b45,#22331f 60%,#141f13);}
+
+/* ═══════════════════════════════════════════
+   A 影院
+   ═══════════════════════════════════════════ */
+.sA{
+  --bg:#09090b;--tx:#f2f2f4;--dim:#81818c;--dim2:#5d5d67;
+  --seal:#e2594e;--line:rgba(255,255,255,.075);
+  --card:#141419;--nav:rgba(14,14,17,.72);
+  background:var(--bg);color:var(--tx);
+}
+.sA.light{
+  --bg:#f6f4f1;--tx:#121214;--dim:#7a7a84;--dim2:#a8a8b0;
+  --seal:#c44438;--line:rgba(0,0,0,.08);
+  --card:#fff;--nav:rgba(252,251,249,.78);
+}
+
+/* A 首页：全出血封面 */
+.a-hero{position:relative;height:268px;}
+.a-hero .bleed{position:absolute;inset:0;}
+.a-hero .bleed::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(to bottom,transparent 0%,transparent 30%,rgba(9,9,11,.45) 62%,var(--bg) 97%);
+}
+.sA.light .a-hero .bleed::after{
+  background:linear-gradient(to bottom,transparent 0%,transparent 30%,rgba(246,244,241,.5) 62%,var(--bg) 97%);
+}
+.a-hero .hmeta{
+  position:absolute;left:24px;right:24px;bottom:14px;z-index:5;
+}
+.a-hero .eyebrow{
+  font-size:10px;letter-spacing:2.2px;text-transform:uppercase;
+  color:var(--seal);font-weight:700;margin-bottom:8px;
+}
+.a-hero h2{font-size:27px;line-height:1.24;font-weight:800;letter-spacing:-.7px;}
+.a-hero .sub{font-size:12px;color:var(--dim);margin-top:7px;letter-spacing:.3px;}
+.a-prog{margin-top:12px;height:2px;background:var(--line);position:relative;border-radius:2px;overflow:hidden;}
+.a-prog i{position:absolute;left:0;top:0;bottom:0;background:var(--seal);border-radius:2px;}
+.a-progline{display:flex;justify-content:space-between;margin-top:7px;}
+.a-progline span{font-size:10.5px;color:var(--dim2);letter-spacing:.4px;}
+.a-progline b{color:var(--tx);font-weight:600;}
+
+.a-sec{margin:26px 0 0;}
+.a-sech{
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding:0 24px 12px;
+}
+.a-sech h3{font-size:13.5px;font-weight:700;letter-spacing:.2px;}
+.a-sech a{font-size:11px;color:var(--dim2);text-decoration:none;letter-spacing:.5px;}
+
+.a-rail{display:flex;gap:12px;padding:0 24px 4px;overflow-x:auto;scrollbar-width:none;}
+.a-rail::-webkit-scrollbar{display:none;}
+.a-rc{width:112px;flex-shrink:0;}
+.a-rc .cv{width:112px;height:158px;border-radius:9px;}
+.a-rc .t{font-size:12px;font-weight:600;margin-top:9px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.a-rc .s{font-size:10px;color:var(--dim2);margin-top:3px;letter-spacing:.3px;}
+
+.a-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px 12px;padding:0 24px;}
+.a-gi .cv{width:100%;aspect-ratio:5/7;border-radius:9px;}
+.a-gi .t{font-size:12.5px;font-weight:600;margin-top:9px;line-height:1.4;}
+.a-gi .s{font-size:10px;color:var(--dim2);margin-top:4px;}
+
+/* A 底栏：悬浮胶囊 */
+.a-nav{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;
+  display:flex;gap:2px;padding:7px 9px;border-radius:999px;
+  background:var(--nav);backdrop-filter:blur(22px) saturate(1.5);
+  -webkit-backdrop-filter:blur(22px) saturate(1.5);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 12px 34px rgba(0,0,0,.5);
+}
+.sA.light .a-nav{border-color:rgba(0,0,0,.07);box-shadow:0 12px 30px rgba(0,0,0,.14);}
+.a-ni{
+  width:54px;height:42px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;border-radius:999px;
+  color:var(--dim2);position:relative;
+}
+.a-ni svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.a-ni span{font-size:8.5px;letter-spacing:.3px;font-weight:600;}
+.a-ni.on{color:var(--tx);background:rgba(255,255,255,.09);}
+.sA.light .a-ni.on{background:rgba(0,0,0,.06);}
+.a-ni.on::after{
+  content:"";position:absolute;bottom:6px;width:3px;height:3px;border-radius:50%;background:var(--seal);
+}
+
+/* A 详情页 */
+.a-dhero{position:relative;height:322px;}
+.a-dhero .bleed{position:absolute;inset:0;}
+.a-dhero .bleed::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(9,9,11,.34) 0%,transparent 26%,transparent 42%,rgba(9,9,11,.82) 78%,var(--bg) 100%);
+}
+.sA.light .a-dhero .bleed::after{
+  background:linear-gradient(to bottom,rgba(0,0,0,.18) 0%,transparent 26%,transparent 42%,rgba(246,244,241,.85) 80%,var(--bg) 100%);
+}
+.a-dhero .dmeta{position:absolute;left:24px;right:24px;bottom:22px;z-index:5;}
+.a-dhero .src{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--seal);font-weight:700;margin-bottom:9px;}
+.a-dhero h2{font-size:29px;font-weight:800;line-height:1.2;letter-spacing:-.8px;}
+.a-dhero .au{font-size:12px;color:var(--dim);margin-top:8px;}
+
+.a-cta{
+  margin:18px 24px 0;display:flex;align-items:center;justify-content:center;gap:9px;
+  height:50px;border-radius:999px;
+  background:var(--tx);color:var(--bg);font-size:14px;font-weight:700;letter-spacing:.3px;
+  box-shadow:0 8px 22px rgba(0,0,0,.34);
+}
+.a-cta svg{width:17px;height:17px;fill:currentColor;}
+
+.a-row{display:flex;gap:8px;padding:14px 24px 0;}
+.a-chip{
+  flex:1;height:38px;border-radius:11px;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:11.5px;color:var(--dim);font-weight:600;
+}
+.a-chip svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;}
+
+.a-para{padding:20px 24px 0;font-size:12.5px;line-height:1.95;color:var(--dim);}
+
+.a-cg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 24px 0;}
+.a-cell{
+  height:42px;border-radius:10px;background:var(--card);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11.5px;font-weight:600;color:var(--dim);
+  border:1px solid var(--line);
+}
+.a-cell.read{color:var(--dim2);opacity:.55;}
+.a-cell.now{background:var(--seal);color:#fff;border-color:transparent;}
+
+/* ═══════════════════════════════════════════
+   B 杂志
+   ═══════════════════════════════════════════ */
+.sB{
+  --bg:#fbf9f4;--tx:#17160f;--dim:#6d6a5f;--dim2:#a29d8e;
+  --rule:#ddd7c6;--rust:#a4522c;--ink:#17160f;
+  background:var(--bg);color:var(--tx);
+}
+.sB.dark{
+  --bg:#131210;--tx:#efeadd;--dim:#8e8a7d;--dim2:#5c594f;
+  --rule:#2d2a23;--rust:#d9805a;--ink:#efeadd;
+}
+
+.b-mast{padding:16px 26px 0;}
+.b-mast .top{display:flex;justify-content:space-between;align-items:center;padding-bottom:9px;}
+.b-mast .logo{font-size:11px;letter-spacing:5px;text-transform:uppercase;font-weight:700;color:var(--tx);}
+.b-mast .ico{display:flex;gap:14px;color:var(--dim);}
+.b-mast .ico svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.b-rule{height:1px;background:var(--rule);}
+.b-rule.thick{height:2.5px;background:var(--tx);}
+
+.b-head{padding:22px 26px 0;}
+.b-head .date{font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:var(--dim);font-weight:600;}
+.b-head h1{font-size:37px;font-weight:700;line-height:1.1;letter-spacing:-1px;margin-top:14px;}
+.b-head .dek{font-size:12.5px;line-height:1.9;color:var(--dim);margin-top:12px;}
+.b-head .dek i{color:var(--rust);font-style:normal;font-weight:600;}
+
+.b-sect{margin-top:30px;}
+.b-sh{display:flex;align-items:baseline;justify-content:space-between;padding:0 26px 12px;}
+.b-sh h3{
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;color:var(--tx);
+}
+.b-sh em{font-size:10.5px;color:var(--dim2);letter-spacing:1px;}
+
+.b-toc{padding:0 26px;}
+.b-ti{
+  display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--rule);
+  align-items:flex-start;
+}
+.b-ti:first-child{border-top:1px solid var(--rule);}
+.b-ti .num{
+  font-size:15px;font-weight:700;color:var(--dim2);min-width:26px;
+  letter-spacing:-.5px;padding-top:1px;
+}
+.b-ti .body{flex:1;min-width:0;}
+.b-ti .t{font-size:15.5px;font-weight:700;line-height:1.35;letter-spacing:-.2px;}
+.b-ti .m{font-size:11px;color:var(--dim);margin-top:5px;letter-spacing:.2px;}
+.b-ti .cv{width:34px;height:48px;border-radius:2px;flex-shrink:0;}
+.b-ti .dot{width:5px;height:5px;border-radius:50%;background:var(--rust);display:inline-block;margin-right:5px;vertical-align:middle;}
+
+.b-feat{display:grid;grid-template-columns:1fr 1fr;gap:20px 14px;padding:14px 26px 0;}
+.b-fi .cv{width:100%;aspect-ratio:5/7;border-radius:2px;}
+.b-fi .k{
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--rust);
+  font-weight:700;margin-top:11px;
+}
+.b-fi .t{font-size:14px;font-weight:700;line-height:1.35;margin-top:5px;letter-spacing:-.2px;}
+.b-fi .m{font-size:10.5px;color:var(--dim);margin-top:4px;}
+
+/* B 底栏：文字标签 */
+.b-nav{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;
+  display:flex;border-top:1px solid var(--rule);
+  background:var(--bg);padding:0 6px;
+}
+.b-ni{
+  flex:1;height:56px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+  color:var(--dim2);font-size:9.5px;letter-spacing:1.4px;font-weight:700;
+  position:relative;text-transform:uppercase;
+}
+.b-ni svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.b-ni.on{color:var(--tx);}
+.b-ni.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:2.5px;background:var(--rust);}
+
+/* B 详情 */
+.b-dwrap{padding:16px 26px 0;}
+.b-dtop{display:flex;gap:16px;align-items:flex-start;}
+.b-dtop .cv{width:98px;height:138px;border-radius:2px;flex-shrink:0;box-shadow:5px 5px 0 rgba(0,0,0,.09);}
+.b-dtop .info{flex:1;padding-top:2px;min-width:0;}
+.b-dtop .src{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--rust);font-weight:700;}
+.b-dtop h2{font-size:23px;font-weight:700;line-height:1.24;letter-spacing:-.6px;margin-top:8px;}
+.b-dtop .au{font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.3px;}
+.b-tags{font-size:11px;line-height:1.85;color:var(--dim);margin-top:12px;}
+.b-tags u{color:var(--tx);text-decoration:none;border-bottom:1px solid var(--rule);padding-bottom:1px;}
+.b-dpara{font-size:12.5px;line-height:2;color:var(--dim);margin-top:16px;}
+
+.b-dcta{
+  margin-top:18px;display:flex;gap:10px;
+}
+.b-btn{
+  flex:1;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;
+  font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  border:1px solid var(--tx);border-radius:0;
+}
+.b-btn.solid{background:var(--ink);color:var(--bg);}
+.sB.dark .b-btn.solid{background:var(--ink);color:var(--bg);}
+.b-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;}
+
+.b-idx{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;padding:6px 26px 0;}
+.b-ix{
+  display:flex;align-items:baseline;gap:8px;padding:9px 0;
+  border-bottom:1px solid var(--rule);font-size:11.5px;
+}
+.b-ix .n{font-size:10.5px;color:var(--dim2);min-width:19px;font-weight:600;letter-spacing:-.3px;}
+.b-ix .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.b-ix.read .t{color:var(--dim2);}
+.b-ix.read .n{color:var(--rust);}
+
+/* ═══════════════════════════════════════════
+   C 数据
+   ═══════════════════════════════════════════ */
+.sC{
+  --bg:#0e1013;--tx:#e7ebef;--dim:#7b858f;--dim2:#4e5862;
+  --line:#1d2329;--blue:#4ea8de;--card:#171b20;--ok:#5fb87f;
+  background:var(--bg);color:var(--tx);
+}
+.sC.light{
+  --bg:#fbfcfd;--tx:#101418;--dim:#66707a;--dim2:#a4adb6;
+  --line:#e3e8ed;--blue:#1f7fc4;--card:#f3f6f9;--ok:#2f8f57;
+}
+
+.c-top{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 18px 12px;
+}
+.c-top .b{font-size:12px;font-weight:700;letter-spacing:.4px;}
+.c-top .b i{color:var(--dim2);font-style:normal;font-weight:400;margin-left:6px;}
+.c-top .r{display:flex;gap:14px;color:var(--dim);}
+.c-top .r svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+
+.c-stats{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.c-st{flex:1;padding:13px 0 12px;text-align:center;border-right:1px solid var(--line);}
+.c-st:last-child{border-right:none;}
+.c-st .v{font-size:19px;font-weight:700;letter-spacing:-.6px;line-height:1;}
+.c-st .v.hi{color:var(--blue);}
+.c-st .k{font-size:8.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim2);margin-top:7px;font-weight:600;}
+
+.c-filt{display:flex;gap:6px;padding:12px 18px 10px;overflow-x:auto;scrollbar-width:none;}
+.c-filt::-webkit-scrollbar{display:none;}
+.c-f{
+  flex-shrink:0;padding:6px 12px;border-radius:5px;font-size:10.5px;font-weight:600;
+  border:1px solid var(--line);color:var(--dim);letter-spacing:.3px;
+}
+.c-f.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+.c-sh{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:14px 18px 7px;
+}
+.c-sh h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim2);font-weight:700;}
+.c-sh em{font-size:10px;color:var(--dim2);}
+
+.c-row{display:flex;gap:11px;padding:9px 18px;align-items:center;}
+.c-row+.c-row{border-top:1px solid var(--line);}
+.c-row .cv{width:38px;height:52px;border-radius:3px;flex-shrink:0;}
+.c-row .m{flex:1;min-width:0;}
+.c-row .t{font-size:12.5px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.c-row .sub{font-size:10px;color:var(--dim2);margin-top:4px;letter-spacing:.2px;}
+.c-row .rt{text-align:right;flex-shrink:0;}
+.c-row .pct{font-size:11px;font-weight:700;color:var(--blue);letter-spacing:-.2px;}
+.c-row .ep{font-size:9.5px;color:var(--dim2);margin-top:4px;letter-spacing:.2px;}
+.c-bar{height:2px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden;}
+.c-bar i{display:block;height:100%;background:var(--blue);border-radius:2px;}
+
+/* C 底栏：带角标 */
+.c-nav{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;
+  display:flex;background:var(--bg);border-top:1px solid var(--line);
+}
+.c-ni{
+  flex:1;height:54px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;color:var(--dim2);position:relative;
+  font-size:8.5px;letter-spacing:.6px;font-weight:600;
+}
+.c-ni svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.c-ni.on{color:var(--blue);}
+.c-ni.on::before{content:"";position:absolute;top:0;left:24%;right:24%;height:2px;background:var(--blue);border-radius:0 0 2px 2px;}
+.c-ni b{
+  position:absolute;top:7px;right:50%;transform:translateX(18px);
+  background:var(--blue);color:#fff;font-size:8px;font-weight:700;
+  min-width:13px;height:13px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+  padding:0 3px;font-variant-numeric:tabular-nums;
+}
+
+/* C 详情 */
+.c-dt{display:flex;gap:12px;padding:14px 18px;align-items:flex-start;}
+.c-dt .cv{width:62px;height:86px;border-radius:3px;flex-shrink:0;}
+.c-dt .m{flex:1;min-width:0;}
+.c-dt h2{font-size:15px;font-weight:700;line-height:1.3;letter-spacing:-.2px;}
+.c-kv{display:flex;gap:6px;margin-top:7px;font-size:10px;color:var(--dim);}
+.c-kv s{text-decoration:none;color:var(--dim2);}
+.c-kv b{font-weight:600;color:var(--tx);}
+
+.c-acts{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.c-ac{
+  flex:1;padding:10px 0 9px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  border-right:1px solid var(--line);font-size:9px;color:var(--dim);letter-spacing:.5px;font-weight:600;
+}
+.c-ac:last-child{border-right:none;}
+.c-ac svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.c-ac.hi{color:var(--blue);}
+
+.c-jump{
+  margin:12px 18px 0;display:flex;gap:8px;
+}
+.c-jbtn{
+  flex:1;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:11px;font-weight:700;letter-spacing:.4px;
+  border:1px solid var(--line);color:var(--tx);background:var(--card);
+}
+.c-jbtn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+.c-cgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:12px 18px 0;}
+.c-cell{
+  height:31px;border-radius:4px;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9.5px;font-weight:600;color:var(--dim);
+  font-variant-numeric:tabular-nums;
+}
+.c-cell.read{color:var(--dim2);background:var(--card);border-color:transparent;}
+.c-cell.read::after{content:"";}
+.c-cell.now{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+/* ───── 说明列表 ───── */
+.notes{
+  margin-top:26px;padding:20px 24px;border-radius:14px;
+  background:#111114;border:1px solid rgba(255,255,255,.075);
+  max-width:1090px;
+}
+.notes h4{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#6f6f79;margin-bottom:14px;font-weight:700;}
+.notes ul{list-style:none;display:grid;gap:11px;}
+.notes li{font-size:12.5px;line-height:1.85;color:#a4a4ae;padding-left:20px;position:relative;}
+.notes li::before{
+  content:"";position:absolute;left:0;top:9px;width:5px;height:5px;
+  border-radius:50%;background:#e2594e;
+}
+.notes li b{color:#e2e2e6;font-weight:600;}
+.notes li code{
+  background:#1c1c21;padding:2px 6px;border-radius:4px;font-size:11px;
+  color:#d8a598;font-family:"SF Mono",Consolas,monospace;
+}
+
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px;font-size:11.5px;color:#6f6f79;}
+.legend span{display:flex;align-items:center;gap:7px;}
+.legend i{width:9px;height:9px;border-radius:2px;display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>venera 重设计 · 三个结构方向</h1>
+  <p class="sub">
+    上次的「墨韵」之所以看起来<b>和原来差不多</b>，是因为它只做了<em>减法</em>——去掉卡片边框、去掉阴影、换个灰调种子色。
+    但屏幕上的<em>骨架</em>一点没动：还是「问候语 + 搜索条 + 标题 + 横向列表 + 标题 + 网格 + 标题 + 网格」的同一套节奏。
+    <br><br>
+    这次三个方向动手的地方不一样：<b>A 改的是「谁占据屏幕」</b>，<b>B 改的是「阅读节奏」</b>，<b>C 改的是「信息密度」</b>。
+    每个方向三屏：首页 / 详情 / 章节。下面可以直接对比。
+  </p>
+  <div class="bar">
+    <div class="sw">
+      <button data-dir="all" class="on">总览</button>
+      <button data-dir="a">A 影院</button>
+      <button data-dir="b">B 杂志</button>
+      <button data-dir="c">C 数据</button>
+    </div>
+    <button class="tbtn" id="themeBtn">切换明暗</button>
+  </div>
+</header>
+
+<!-- ══════════ A 影院 ══════════ -->
+<section class="dir show" id="dir-a">
+  <div class="dirhead">
+    <span class="tag">A</span>
+    <h2>影院</h2>
+    <span class="en">Cinematic</span>
+  </div>
+  <p class="desc">
+    <b>让封面吃满屏幕。</b>现在首页最上面是一句问候语——信息量为零，占着黄金位置。
+    这个方向把最上面 40% 让给「你正在读的那本的封面」，标题压在封面上，进度条横贯全宽。
+    下面是横向书脊轨道，再往下才是网格。<b>视觉重心从「文字」挪到「图」。</b>
+  </p>
+  <div class="stage">
+
+    <!-- A 首页 -->
+    <div>
+      <div class="phone"><div class="screen sA">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="a-hero">
+            <div class="bleed cv c6" style="border-radius:0;"></div>
+            <div class="sb" style="color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5);">
+              <span>21:24</span><span>5G ▮▮▮ 87%</span>
+            </div>
+            <div class="hmeta">
+              <div class="eyebrow">继续阅读 · 第 42 话</div>
+              <h2 class="serif">星海航线</h2>
+              <div class="sub">碎星带 · 剩余 18 页</div>
+              <div class="a-prog"><i style="width:64%"></i></div>
+              <div class="a-progline"><span>UP NEXT · 第 43 话</span><b>64%</b></div>
+            </div>
+          </div>
+
+          <div class="a-sec">
+            <div class="a-sech"><h3>接下来</h3><a>全部</a></div>
+            <div class="a-rail">
+              <div class="a-rc"><div class="cv c2"></div><div class="t">灰烬之约</div><div class="s">第 18 话</div></div>
+              <div class="a-rc"><div class="cv c3"></div><div class="t">深夜文库</div><div class="s">第 7 话</div></div>
+              <div class="a-rc"><div class="cv c7"></div><div class="t">琉璃工房</div><div class="s">第 25 话</div></div>
+              <div class="a-rc"><div class="cv c5"></div><div class="t">长夜漫步</div><div class="s">第 12 话</div></div>
+            </div>
+          </div>
+
+          <div class="a-sec">
+            <div class="a-sech"><h3>追更 · 3 部有更新</h3><a>管理</a></div>
+            <div class="a-grid">
+              <div class="a-gi"><div class="cv c1"></div><div class="t">月下交易</div><div class="s">★ 4.8 · 214 话</div></div>
+              <div class="a-gi"><div class="cv c4"></div><div class="t">铁与羽</div><div class="s">★ 4.6 · 96 话</div></div>
+              <div class="a-gi"><div class="cv c8"></div><div class="t">春与夏的方程式</div><div class="s">★ 4.9 · 48 话</div></div>
+              <div class="a-gi"><div class="cv c3"></div><div class="t">苍蓝纪事</div><div class="s">★ 4.5 · 71 话</div></div>
+            </div>
+          </div>
+          <div style="height:96px;"></div>
+        </div>
+        <div class="a-nav">
+          <div class="a-ni on">
+            <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+            <span>首页</span>
+          </div>
+          <div class="a-ni">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>收藏</span>
+          </div>
+          <div class="a-ni">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
+            <span>探索</span>
+          </div>
+          <div class="a-ni">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+            <span>分类</span>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>首页</b> · 封面全出血，问候语消失</div>
+    </div>
+
+    <!-- A 详情 -->
+    <div>
+      <div class="phone"><div class="screen sA">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="a-dhero">
+            <div class="bleed cv c6" style="border-radius:0;"></div>
+            <div class="sb" style="color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5);">
+              <span>21:24</span><span>5G ▮▮▮ 87%</span>
+            </div>
+            <div class="dmeta">
+              <div class="src">Comic Source · Kura</div>
+              <h2 class="serif">星海航线</h2>
+              <div class="au">苍蓝工作室 · 214 话 · 连载中</div>
+            </div>
+          </div>
+
+          <div class="a-cta">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            继续阅读 第 42 话
+          </div>
+
+          <div class="a-row">
+            <div class="a-chip">
+              <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              收藏
+            </div>
+            <div class="a-chip">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              下载
+            </div>
+            <div class="a-chip">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+              更多
+            </div>
+          </div>
+
+          <div class="a-para">
+            在被遗忘的第十三星区，货运船「渡鸦号」载着最后一批移民出发。
+            年轻的领航员并不知道，航线图上那条被标为安全通道的曲率走廊，
+            三百年前曾经吞噬掉整支舰队。
+          </div>
+
+          <div class="a-sec">
+            <div class="a-sech"><h3>章节 · 214</h3><a>倒序</a></div>
+            <div class="a-cg">
+              <div class="a-cell read">39</div>
+              <div class="a-cell read">40</div>
+              <div class="a-cell read">41</div>
+              <div class="a-cell now">42</div>
+              <div class="a-cell">43</div>
+              <div class="a-cell">44</div>
+              <div class="a-cell">45</div>
+              <div class="a-cell">46</div>
+              <div class="a-cell">47</div>
+            </div>
+          </div>
+          <div style="height:100px;"></div>
+        </div>
+        <div class="a-nav">
+          <div class="a-ni"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>首页</span></div>
+          <div class="a-ni on"><svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>收藏</span></div>
+          <div class="a-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span>探索</span></div>
+          <div class="a-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg><span>分类</span></div>
+        </div>
+      </div></div>
+      <div class="cap"><b>详情</b> · 封面当背景，CTA 悬浮在封面上</div>
+    </div>
+
+    <!-- A 章节（倒序态） -->
+    <div>
+      <div class="phone"><div class="screen sA">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div style="padding:8px 24px 0;">
+            <div class="serif" style="font-size:19px;font-weight:800;letter-spacing:-.4px;">星海航线</div>
+            <div style="font-size:10.5px;color:var(--dim2);margin-top:5px;letter-spacing:1.6px;text-transform:uppercase;">第 214 话 · 终点</div>
+          </div>
+
+          <div style="display:flex;gap:6px;padding:18px 24px 0;">
+            <div class="c-f" style="flex:1;text-align:center;border-color:var(--seal);color:var(--seal);font-size:11px;">214 → 1</div>
+            <div class="c-f" style="flex:1;text-align:center;font-size:11px;">1 → 214</div>
+          </div>
+
+          <div class="a-para" style="padding-top:20px;">
+            <span style="color:var(--seal);font-weight:700;">★</span>
+            「终点」是全作最后一话。倒序模式下最新一话直接顶在最上面，
+            不用再往下翻 214 格。
+          </div>
+
+          <div class="a-cg" style="padding-top:20px;">
+            <div class="a-cell now">214</div>
+            <div class="a-cell">213</div>
+            <div class="a-cell">212</div>
+            <div class="a-cell">211</div>
+            <div class="a-cell">210</div>
+            <div class="a-cell">209</div>
+            <div class="a-cell">208</div>
+            <div class="a-cell">207</div>
+            <div class="a-cell read">206</div>
+          </div>
+          <div style="height:100px;"></div>
+        </div>
+        <div class="a-nav">
+          <div class="a-ni"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>首页</span></div>
+          <div class="a-ni on"><svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>收藏</span></div>
+          <div class="a-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg><span>探索</span></div>
+          <div class="a-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg><span>分类</span></div>
+        </div>
+      </div></div>
+      <div class="cap"><b>章节</b> · 顺序切换做成显式二选一</div>
+    </div>
+
+  </div>
+  <div class="notes">
+    <h4>方向 A · 改了这些</h4>
+    <ul>
+      <li><b>问候语整块删掉。</b>「晚上好」占着首屏最大的字号，却一条信息都没有。改成封面主导，日期挪到顶部小字。</li>
+      <li><b>继续阅读从「列表」变成「主视觉」。</b>现在是一个 44×60 的小封面配一行字；改成整屏宽的出血封面 + 压在图上的衬线大标题。</li>
+      <li><b>底栏从贴边变悬浮胶囊。</b>内容可以延伸到栏后，滚动手感更连续。选中态是「浅色填充 + 一个小红点」，不是颜色突变。</li>
+      <li><b>详情页封面当成全屏背景</b>，而不是左上一个 144px 的小方块。标题压在渐变上，视觉冲击完全不一样。</li>
+      <li><b>顺序切换做成两个并排按钮</b>（<code>214 → 1</code> / <code>1 → 214</code>），替掉那个没人认得出的图标。<b>注意：现有倒序功能本身是好的，只是藏起来了</b>——主人就没想到标题栏右边那个按钮就是它。这里只是让它更容易被发现。</li>
+      <li>代价：首屏能看到的书目变少了，翻找效率略降。适合「追更」为主、不是「大海捞针」的用法。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ B 杂志 ══════════ -->
+<section class="dir" id="dir-b">
+  <div class="dirhead">
+    <span class="tag">B</span>
+    <h2>杂志</h2>
+    <span class="en">Editorial</span>
+  </div>
+  <p class="desc">
+    <b>把阅读节奏做成排版。</b>这个方向完全不靠图说话，靠<em>字</em>——衬线大标题、全大写小字标签、粗细不一的横线。
+    忘掉「卡片」，想象一本印刷的目录页：章节表是<b>编号索引</b>，推荐是<b>带说明的双栏特稿</b>。
+    <b>改动最大的是「呼吸感」和「层级」</b>，不是颜色。
+  </p>
+  <div class="stage">
+
+    <!-- B 首页 -->
+    <div>
+      <div class="phone"><div class="screen sB">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="b-mast">
+            <div class="top">
+              <div class="logo">Venera</div>
+              <div class="ico">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+              </div>
+            </div>
+            <div class="b-rule thick"></div>
+          </div>
+
+          <div class="b-head">
+            <div class="date">11 月 15 日 · 星期六</div>
+            <h1 class="serif">晚上好。</h1>
+            <div class="dek">
+              你有 <i>3 部</i> 更新待读，上次停在《星海航线》第 42 话。
+            </div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>继续阅读</h3><em>4 部</em></div>
+            <div class="b-toc">
+              <div class="b-ti">
+                <div class="num mono">01</div>
+                <div class="body">
+                  <div class="t serif"><span class="dot"></span>星海航线</div>
+                  <div class="m">第 42 话 · 碎星带 · 64%</div>
+                </div>
+                <div class="cv c6"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">02</div>
+                <div class="body">
+                  <div class="t serif">灰烬之约</div>
+                  <div class="m">第 18 话 · 燃烧的桥 · 31%</div>
+                </div>
+                <div class="cv c2"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">03</div>
+                <div class="body">
+                  <div class="t serif">深夜文库</div>
+                  <div class="m">第 7 话 · 便利店 · 82%</div>
+                </div>
+                <div class="cv c3"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">04</div>
+                <div class="body">
+                  <div class="t serif">琉璃工房</div>
+                  <div class="m">第 25 话 · 窑变 · 12%</div>
+                </div>
+                <div class="cv c7"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>本期推荐</h3><em>更多</em></div>
+            <div class="b-feat">
+              <div class="b-fi">
+                <div class="cv c1"></div>
+                <div class="k">连载 · 214 话</div>
+                <div class="t serif">月下交易</div>
+                <div class="m">★ 4.8 · 都市奇幻</div>
+              </div>
+              <div class="b-fi">
+                <div class="cv c4"></div>
+                <div class="k">完结 · 96 话</div>
+                <div class="t serif">铁与羽</div>
+                <div class="m">★ 4.6 · 蒸汽朋克</div>
+              </div>
+            </div>
+          </div>
+          <div style="height:80px;"></div>
+        </div>
+        <div class="b-nav">
+          <div class="b-ni on"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>首页</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>探索</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>分类</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>首页</b> · 报头 + 编号目录，靠字排版</div>
+    </div>
+
+    <!-- B 详情 -->
+    <div>
+      <div class="phone"><div class="screen sB">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="b-mast">
+            <div class="top">
+              <div class="logo">Venera</div>
+              <div class="ico">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+              </div>
+            </div>
+            <div class="b-rule thick"></div>
+          </div>
+
+          <div class="b-dwrap">
+            <div class="b-dtop">
+              <div class="cv c6"></div>
+              <div class="info">
+                <div class="src">Kura · 连载中</div>
+                <h2 class="serif">星海航线</h2>
+                <div class="au">苍蓝工作室 · 214 话 · 2024</div>
+              </div>
+            </div>
+
+            <div class="b-tags">
+              标签 —— <u>科幻</u> <u>太空歌剧</u> <u>冒险</u> <u>剧情</u> <u>全彩</u>
+            </div>
+
+            <div class="b-dpara">
+              在被遗忘的第十三星区，货运船「渡鸦号」载着最后一批移民出发。
+              年轻的领航员并不知道，航线图上那条被标为安全通道的曲率走廊，
+              三百年前曾经吞噬掉整支舰队。
+            </div>
+
+            <div class="b-dcta">
+              <div class="b-btn solid">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                第 42 话
+              </div>
+              <div class="b-btn">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="b-sect" style="margin-top:26px;">
+            <div class="b-sh"><h3>章目录</h3><em>214 话 · 倒序</em></div>
+            <div class="b-idx">
+              <div class="b-ix"><span class="n mono">214</span><span class="t">终点</span></div>
+              <div class="b-ix"><span class="n mono">213</span><span class="t">渡鸦</span></div>
+              <div class="b-ix"><span class="n mono">212</span><span class="t">曲率走廊</span></div>
+              <div class="b-ix"><span class="n mono">211</span><span class="t">回声</span></div>
+              <div class="b-ix read"><span class="n mono">210</span><span class="t">无人区</span></div>
+              <div class="b-ix read"><span class="n mono">209</span><span class="t">旧地图</span></div>
+              <div class="b-ix read"><span class="n mono">208</span><span class="t">领航员</span></div>
+              <div class="b-ix read"><span class="n mono">207</span><span class="t">启航</span></div>
+            </div>
+          </div>
+          <div style="height:80px;"></div>
+        </div>
+        <div class="b-nav">
+          <div class="b-ni"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>首页</div>
+          <div class="b-ni on"><svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>探索</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>分类</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>详情</b> · 直角封面、标签串成一列</div>
+    </div>
+
+    <!-- B 深色版首页 -->
+    <div>
+      <div class="phone"><div class="screen sB dark">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="b-mast">
+            <div class="top">
+              <div class="logo">Venera</div>
+              <div class="ico">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+              </div>
+            </div>
+            <div class="b-rule thick"></div>
+          </div>
+
+          <div class="b-head">
+            <div class="date">11 月 15 日 · 星期六</div>
+            <h1 class="serif">晚上好。</h1>
+            <div class="dek">
+              你有 <i>3 部</i> 更新待读，上次停在《星海航线》第 42 话。
+            </div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>继续阅读</h3><em>4 部</em></div>
+            <div class="b-toc">
+              <div class="b-ti">
+                <div class="num mono">01</div>
+                <div class="body">
+                  <div class="t serif"><span class="dot"></span>星海航线</div>
+                  <div class="m">第 42 话 · 碎星带 · 64%</div>
+                </div>
+                <div class="cv c6"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">02</div>
+                <div class="body">
+                  <div class="t serif">灰烬之约</div>
+                  <div class="m">第 18 话 · 燃烧的桥 · 31%</div>
+                </div>
+                <div class="cv c2"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">03</div>
+                <div class="body">
+                  <div class="t serif">深夜文库</div>
+                  <div class="m">第 7 话 · 便利店 · 82%</div>
+                </div>
+                <div class="cv c3"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>本期推荐</h3><em>更多</em></div>
+            <div class="b-feat">
+              <div class="b-fi">
+                <div class="cv c1"></div>
+                <div class="k">连载 · 214 话</div>
+                <div class="t serif">月下交易</div>
+                <div class="m">★ 4.8 · 都市奇幻</div>
+              </div>
+              <div class="b-fi">
+                <div class="cv c4"></div>
+                <div class="k">完结 · 96 话</div>
+                <div class="t serif">铁与羽</div>
+                <div class="m">★ 4.6 · 蒸汽朋克</div>
+              </div>
+            </div>
+          </div>
+          <div style="height:80px;"></div>
+        </div>
+        <div class="b-nav">
+          <div class="b-ni on"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>首页</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>探索</div>
+          <div class="b-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>分类</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>深色版</b> · 同一套排版，纸换成了墨</div>
+    </div>
+
+  </div>
+  <div class="notes">
+    <h4>方向 B · 改了这些</h4>
+    <ul>
+      <li><b>引入「报头」概念。</b>顶部一条粗横线 + 全大写小字标的，像翻开一本杂志的封面。现在软件顶部什么都没有。</li>
+      <li><b>继续阅读变成编号目录。</b><code>01 02 03</code> 的等宽编号 + 衬线书名 + 细分割线。比现在的小封面列表更有「这是本书」的感觉。</li>
+      <li><b>封面改成直角、硬阴影。</b>不是圆角卡片，是「贴在纸上的一张图」。这一条最能让观感脱离「通用 App」。</li>
+      <li><b>标签排成一列连续的词</b>，不是一个个独立的胶囊 chip。像杂志的关键词栏。</li>
+      <li><b>章节表变成双栏索引</b>（编号 + 标题），像书的目录页。已读的用朱红编号区分，不整行变灰。</li>
+      <li>代价：信息密度中等，靠「留白和字」撑场面，暗色下要小心别糊。需要打包衬线字体（Noto Serif SC 子集约 2–5MB）。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ C 数据 ══════════ -->
+<section class="dir" id="dir-c">
+  <div class="dirhead">
+    <span class="tag">C</span>
+    <h2>数据</h2>
+    <span class="en">Dense / Instrument</span>
+  </div>
+  <p class="desc">
+    <b>把 App 当仪表盘用。</b>不追求好看，追求「一眼扫完、数字清楚」。
+    顶部一条 <b>统计条</b>（待读 / 更新 / 收藏 / 今日时长），列表全是等高紧凑行，右侧永远对齐着进度百分比。
+    等宽数字、细分隔线、极小字号标签。<b>改动最大的是信息密度</b>——同屏能看到的东西翻倍。
+  </p>
+  <div class="stage">
+
+    <!-- C 首页 -->
+    <div>
+      <div class="phone"><div class="screen sC">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="c-top">
+            <div class="b">venera <i>· 书架</i></div>
+            <div class="r">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </div>
+          </div>
+
+          <div class="c-stats">
+            <div class="c-st"><div class="v mono">12</div><div class="k">待读</div></div>
+            <div class="c-st"><div class="v mono hi">3</div><div class="k">更新</div></div>
+            <div class="c-st"><div class="v mono">128</div><div class="k">收藏</div></div>
+            <div class="c-st"><div class="v mono">45<span style="font-size:10px;">m</span></div><div class="k">今日</div></div>
+          </div>
+
+          <div class="c-filt">
+            <div class="c-f on">全部</div>
+            <div class="c-f">追更 12</div>
+            <div class="c-f">已完结 44</div>
+            <div class="c-f">短篇 9</div>
+          </div>
+
+          <div class="c-sh"><h3>继续阅读</h3><em>最近 4 部</em></div>
+          <div class="c-row">
+            <div class="cv c6"></div>
+            <div class="m">
+              <div class="t">星海航线</div>
+              <div class="sub">第 42 话 · 碎星带</div>
+              <div class="c-bar"><i style="width:64%"></i></div>
+            </div>
+            <div class="rt"><div class="pct mono">64%</div><div class="ep mono">42/214</div></div>
+          </div>
+          <div class="c-row">
+            <div class="cv c2"></div>
+            <div class="m">
+              <div class="t">灰烬之约</div>
+              <div class="sub">第 18 话 · 燃烧的桥</div>
+              <div class="c-bar"><i style="width:31%"></i></div>
+            </div>
+            <div class="rt"><div class="pct mono">31%</div><div class="ep mono">18/58</div></div>
+          </div>
+          <div class="c-row">
+            <div class="cv c3"></div>
+            <div class="m">
+              <div class="t">深夜文库</div>
+              <div class="sub">第 7 话 · 便利店</div>
+              <div class="c-bar"><i style="width:82%"></i></div>
+            </div>
+            <div class="rt"><div class="pct mono">82%</div><div class="ep mono">7/9</div></div>
+          </div>
+
+          <div class="c-sh"><h3>更新</h3><em>3 部</em></div>
+          <div class="c-row">
+            <div class="cv c1"></div>
+            <div class="m">
+              <div class="t">月下交易</div>
+              <div class="sub">今天 · 新增 2 话</div>
+            </div>
+            <div class="rt"><div class="pct mono" style="color:var(--ok);">+2</div><div class="ep mono">214</div></div>
+          </div>
+          <div class="c-row">
+            <div class="cv c4"></div>
+            <div class="m">
+              <div class="t">铁与羽</div>
+              <div class="sub">昨天 · 新增 1 话</div>
+            </div>
+            <div class="rt"><div class="pct mono" style="color:var(--ok);">+1</div><div class="ep mono">96</div></div>
+          </div>
+          <div style="height:76px;"></div>
+        </div>
+        <div class="c-nav">
+          <div class="c-ni on">
+            <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>首页
+          </div>
+          <div class="c-ni">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏
+            <b>3</b>
+          </div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>探索</div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>分类</div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>设置</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>首页</b> · 统计条 + 等高紧凑行</div>
+    </div>
+
+    <!-- C 详情 -->
+    <div>
+      <div class="phone"><div class="screen sC">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="c-top">
+            <div class="b">详情</div>
+            <div class="r">
+              <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </div>
+          </div>
+
+          <div class="c-dt">
+            <div class="cv c6"></div>
+            <div class="m">
+              <h2 class="serif">星海航线</h2>
+              <div class="c-kv"><s>作者</s><b>苍蓝工作室</b></div>
+              <div class="c-kv"><s>状态</s><b>连载中</b><s>·</s><b>214 话</b></div>
+              <div class="c-kv"><s>来源</s><b>Kura</b></div>
+            </div>
+          </div>
+
+          <div class="c-acts">
+            <div class="c-ac hi">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>阅读
+            </div>
+            <div class="c-ac">
+              <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏
+            </div>
+            <div class="c-ac">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>下载
+            </div>
+            <div class="c-ac">
+              <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>分享
+            </div>
+          </div>
+
+          <div class="c-jump">
+            <div class="c-jbtn primary">继续 第 42 话</div>
+            <div class="c-jbtn" style="flex:0 0 78px;">最后一话</div>
+          </div>
+
+          <div class="c-sh"><h3>章节</h3><em>214 · 倒序</em></div>
+          <div class="c-cgrid">
+            <div class="c-cell now">214</div>
+            <div class="c-cell">213</div>
+            <div class="c-cell">212</div>
+            <div class="c-cell">211</div>
+            <div class="c-cell">210</div>
+            <div class="c-cell">209</div>
+            <div class="c-cell">208</div>
+            <div class="c-cell">207</div>
+            <div class="c-cell">206</div>
+            <div class="c-cell">205</div>
+            <div class="c-cell read">204</div>
+            <div class="c-cell read">203</div>
+            <div class="c-cell read">202</div>
+            <div class="c-cell read">201</div>
+            <div class="c-cell read">200</div>
+          </div>
+
+          <div class="c-sh"><h3>信息</h3></div>
+          <div style="padding:0 18px;">
+            <div class="c-kv" style="justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:10.5px;">
+              <s>上次阅读</s><b class="mono">11-14 22:31</b>
+            </div>
+            <div class="c-kv" style="justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:10.5px;">
+              <s>平均每话</s><b class="mono">24 页</b>
+            </div>
+            <div class="c-kv" style="justify-content:space-between;padding:7px 0;font-size:10.5px;">
+              <s>累计用时</s><b class="mono">6h 12m</b>
+            </div>
+          </div>
+          <div style="height:76px;"></div>
+        </div>
+        <div class="c-nav">
+          <div class="c-ni"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>首页</div>
+          <div class="c-ni on"><svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏<b>3</b></div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>探索</div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>分类</div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>设置</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>详情</b> · 键值对信息 + 「最后一话」快捷键</div>
+    </div>
+
+    <!-- C 浅色首页 -->
+    <div>
+      <div class="phone"><div class="screen sC light">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="c-top">
+            <div class="b">venera <i>· 书架</i></div>
+            <div class="r">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </div>
+          </div>
+          <div class="c-stats">
+            <div class="c-st"><div class="v mono">12</div><div class="k">待读</div></div>
+            <div class="c-st"><div class="v mono hi">3</div><div class="k">更新</div></div>
+            <div class="c-st"><div class="v mono">128</div><div class="k">收藏</div></div>
+            <div class="c-st"><div class="v mono">45<span style="font-size:10px;">m</span></div><div class="k">今日</div></div>
+          </div>
+          <div class="c-filt">
+            <div class="c-f on">全部</div>
+            <div class="c-f">追更 12</div>
+            <div class="c-f">已完结 44</div>
+          </div>
+          <div class="c-sh"><h3>继续阅读</h3><em>最近 3 部</em></div>
+          <div class="c-row">
+            <div class="cv c6"></div>
+            <div class="m">
+              <div class="t">星海航线</div>
+              <div class="sub">第 42 话 · 碎星带</div>
+              <div class="c-bar"><i style="width:64%"></i></div>
+            </div>
+            <div class="rt"><div class="pct mono">64%</div><div class="ep mono">42/214</div></div>
+          </div>
+          <div class="c-row">
+            <div class="cv c2"></div>
+            <div class="m">
+              <div class="t">灰烬之约</div>
+              <div class="sub">第 18 话 · 燃烧的桥</div>
+              <div class="c-bar"><i style="width:31%"></i></div>
+            </div>
+            <div class="rt"><div class="pct mono">31%</div><div class="ep mono">18/58</div></div>
+          </div>
+          <div class="c-row">
+            <div class="cv c3"></div>
+            <div class="m">
+              <div class="t">深夜文库</div>
+              <div class="sub">第 7 话 · 便利店</div>
+              <div class="c-bar"><i style="width:82%"></i></div>
+            </div>
+            <div class="rt"><div class="pct mono">82%</div><div class="ep mono">7/9</div></div>
+          </div>
+          <div class="c-sh"><h3>更新</h3><em>3 部</em></div>
+          <div class="c-row">
+            <div class="cv c1"></div>
+            <div class="m">
+              <div class="t">月下交易</div>
+              <div class="sub">今天 · 新增 2 话</div>
+            </div>
+            <div class="rt"><div class="pct mono" style="color:var(--ok);">+2</div><div class="ep mono">214</div></div>
+          </div>
+          <div style="height:76px;"></div>
+        </div>
+        <div class="c-nav">
+          <div class="c-ni on"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>首页</div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>收藏<b>3</b></div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>探索</div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>分类</div>
+          <div class="c-ni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>设置</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>浅色版</b> · 同一张脸，白纸底</div>
+    </div>
+
+  </div>
+  <div class="notes">
+    <h4>方向 C · 改了这些</h4>
+    <ul>
+      <li><b>顶部加一条统计带</b>（待读 / 更新 / 收藏 / 今日时长）。这四个数字现在散落各处，集中起来就有了「进度感」。</li>
+      <li><b>继续阅读改成等高紧凑行</b>，右侧永远对齐 <code>64%</code> 和 <code>42/214</code>。等宽数字保证小数点不动。</li>
+      <li><b>章节网格从 2 列变 5 列</b>，格子只放数字（42 而不是「第 42 话」）。现在手机上是 <code>maxCrossAxisExtent: 250</code> 算出 <b>2 列 / 每格 48 高</b>，一屏只能看到 8～10 话；改成 5 列 31 高后一屏能看到 15 话。<b>这是本方向最实在的一条改善。</b></li>
+      <li><b>直接给「最后一话」一个按钮</b>——这是主人原本提的那个痛点，一行代码就能加。</li>
+      <li><b>底栏能带角标</b>（收藏 <code>3</code>），一眼知道有多少更新。</li>
+      <li>代价：信息密度高，视觉上偏「工具」不偏「享受」。适合列表几百部、重度使用的人。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ 总览尾注 ══════════ -->
+<section class="dir show" id="dir-summary">
+  <div class="notes" style="margin-top:34px;">
+    <h4>三个方向的本质区别</h4>
+    <ul>
+      <li><b>A 影院</b>：换的是<em style="color:#e2594e;font-style:normal;">主视觉</em>。封面吃满屏，标题压在图上。看起来最「不像原来的 App」。</li>
+      <li><b>B 杂志</b>：换的是<em style="color:#e2594e;font-style:normal;">排版语言</em>。衬线 + 横线 + 编号索引，直角封面。最有「质感」但也最考验字体。</li>
+      <li><b>C 数据</b>：换的是<em style="color:#e2594e;font-style:normal;">信息架构</em>。统计条 + 紧凑行 + 等宽数字。最实用，也最不像「重设计」。</li>
+    </ul>
+    <div class="legend">
+      <span><i style="background:#e2594e;"></i>共用的朱砂红，只作信号（更新点 / 进度 / 已读）</span>
+      <span><i style="background:#4ea8de;"></i>C 用的是冷静的蓝，强调「仪表」感</span>
+      <span><i style="background:#a4522c;"></i>B 用的是锈红，偏纸张暖调</span>
+    </div>
+    <p style="margin-top:16px;font-size:12px;color:#6f6f79;line-height:1.9;">
+      三个方向都保留：底栏四个主入口、搜索、设置。业务逻辑、数据层、漫画源机制<b style="color:#a4a4ae;">一律不动</b>——
+      只换「长什么样」和「东西放哪」。选定之后，我会把它落成真正的 Dart 代码，而不是停在这张图。
+    </p>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var buttons = document.querySelectorAll('.sw button');
+  var sections = {
+    a: document.getElementById('dir-a'),
+    b: document.getElementById('dir-b'),
+    c: document.getElementById('dir-c'),
+    summary: document.getElementById('dir-summary')
+  };
+
+  function show(dir){
+    if (dir === 'all') {
+      sections.a.classList.add('show');
+      sections.b.classList.add('show');
+      sections.c.classList.add('show');
+      sections.summary.classList.add('show');
+    } else {
+      ['a','b','c'].forEach(function(k){
+        sections[k].classList.toggle('show', k === dir);
+      });
+      sections.summary.classList.toggle('show', dir === 'b' || dir === 'c');
+    }
+  }
+
+  buttons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      buttons.forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      show(btn.dataset.dir);
+    });
+  });
+
+  // 明暗切换：A 和 C 用 .light，B 默认浅色用 .dark
+  var dark = true;
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    dark = !dark;
+    document.querySelectorAll('.sA').forEach(function(el){ el.classList.toggle('light', !dark); });
+    document.querySelectorAll('.sC').forEach(function(el){ el.classList.toggle('light', !dark); });
+    // B 是浅色优先：暗色模式下才加 .dark
+    document.querySelectorAll('.sB').forEach(function(el){
+      if (el.closest('#dir-b')) {
+        // 第三台手机是常驻深色示例，保持不动
+        var isDarkSample = el.querySelector('.b-nav') && el.parentElement.parentElement.parentElement === document.querySelector('#dir-b .stage > div:last-child');
+        if (isDarkSample) return;
+      }
+      el.classList.toggle('dark', dark);
+    });
+    this.textContent = dark ? '当前：暗色' : '当前：亮色';
+  });
+})();
+</script>
+</body>
+</html>

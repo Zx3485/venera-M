@@ -41,6 +41,7 @@ class _CategoriesPageState extends State<CategoriesPage>
       setState(() {
         this.categories = categories;
       });
+      controller.dispose();
       controller = TabController(length: categories.length, vsync: this);
     }
   }

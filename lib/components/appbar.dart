@@ -80,7 +80,12 @@ class _AppbarState extends State<Appbar> {
     var content = Container(
       decoration: BoxDecoration(
         color: widget.backgroundColor ??
-            context.colorScheme.surface.toOpacity(0.86),
+            context.colorScheme.surface.toOpacity(
+              // 磨砂开启时降低底色不透明度，让模糊层真正透出来
+              glassInAppBar
+                  ? (0.86 - glassOpacity * 0.8).clamp(0.25, 0.86).toDouble()
+                  : 0.86,
+            ),
       ),
       height: _kAppBarHeight + context.padding.top,
       child: Row(
@@ -99,7 +104,13 @@ class _AppbarState extends State<Appbar> {
           ),
           Expanded(
             child: DefaultTextStyle(
-              style: DefaultTextStyle.of(context).style.copyWith(fontSize: 20),
+              // 杂志报头：衬线标题，字号收敛，靠字重与衬线拉层级
+              style: kSerifStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+                color: context.colorScheme.onSurface,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               child: widget.title,
@@ -112,18 +123,37 @@ class _AppbarState extends State<Appbar> {
         ],
       ).paddingTop(context.padding.top),
     );
+    // 底部 hairline：杂志页眉与正文之间的那条细线
+    content = Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: context.colorScheme.outlineVariant,
+            width: kRuleHair,
+          ),
+        ),
+      ),
+      child: content,
+    );
     if (widget.style == AppbarStyle.shadow) {
       return Material(
         color: context.colorScheme.surface,
         elevation: _scrolledUnder ? 2 : 0,
         child: content,
       );
-    } else {
-      return BlurEffect(
-        blur: _scrolledUnder ? 15 : 0,
+    }
+    if (!glassInAppBar) {
+      // 磨砂关闭：实色标题栏，不再常驻 BackdropFilter
+      return Material(
+        color: context.colorScheme.surface.toOpacity(0.86),
+        elevation: 0,
         child: content,
       );
     }
+    return BlurEffect(
+      blur: _scrolledUnder ? glassBlur : 0,
+      child: content,
+    );
   }
 }
 
@@ -213,7 +243,13 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         Expanded(
           child: DefaultTextStyle(
-            style: DefaultTextStyle.of(context).style.copyWith(fontSize: 20),
+            // 杂志报头：衬线标题
+            style: kSerifStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: context.colorScheme.onSurface,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             child: title,
@@ -226,15 +262,41 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
       ],
     ).paddingTop(topPadding);
 
+    // 底部 hairline（杂志页眉收口）
+    Widget bodyWithRule = Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: context.colorScheme.outlineVariant,
+            width: kRuleHair,
+          ),
+        ),
+      ),
+      child: body,
+    );
+
     if (style == AppbarStyle.blur) {
-      return SizedBox.expand(
-        child: BlurEffect(
-          blur: 15,
+      if (!glassInAppBar) {
+        // 磨砂关闭：实色 SliverAppbar，不建 BackdropFilter
+        return SizedBox.expand(
           child: Material(
-            color: context.colorScheme.surface.toOpacity(0.86),
+            color: context.colorScheme.surface,
             elevation: 0,
             borderRadius: BorderRadius.circular(radius),
-            child: body,
+            child: bodyWithRule,
+          ),
+        );
+      }
+      return SizedBox.expand(
+        child: BlurEffect(
+          blur: glassBlur,
+          child: Material(
+            color: context.colorScheme.surface.toOpacity(
+              (0.86 - glassOpacity * 0.8).clamp(0.25, 0.86).toDouble(),
+            ),
+            elevation: 0,
+            borderRadius: BorderRadius.circular(radius),
+            child: bodyWithRule,
           ),
         ),
       );
@@ -244,7 +306,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
           color: context.colorScheme.surface,
           elevation: shrinkOffset == 0 ? 0 : 2,
           borderRadius: BorderRadius.circular(radius),
-          child: body,
+          child: bodyWithRule,
         ),
       );
     }
@@ -298,7 +360,7 @@ class _AppTabBarState extends State<AppTabBar> {
 
   static const tabPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 6);
 
-  static const tabRadius = 8.0;
+  static const tabRadius = 0.0;
 
   _IndicatorPainter? painter;
 
@@ -403,8 +465,8 @@ class _AppTabBarState extends State<AppTabBar> {
           ? BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: context.colorScheme.outlineVariant,
-                  width: 0.6,
+                  color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  width: kBorderHairline,
                 ),
               ),
             )
@@ -770,7 +832,8 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
         color: Theme.of(context).colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+            width: kBorderHairline,
           ),
         ),
       ),
@@ -876,7 +939,8 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+            width: kBorderHairline,
           ),
         ),
       ),
@@ -941,7 +1005,7 @@ class TabActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: kCorner(context, scale: 0.45),
       child: Container(
         height: _kTabHeight,
         padding: const EdgeInsets.symmetric(horizontal: 12),

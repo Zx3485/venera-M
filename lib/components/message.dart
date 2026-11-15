@@ -7,28 +7,76 @@ void showToast({
   Widget? trailing,
   int? seconds,
 }) {
-  var newEntry = OverlayEntry(
+  var state = context.findAncestorStateOfType<OverlayWidgetState>();
+  late final OverlayEntry newEntry;
+  final key = GlobalKey<_ToastOverlayState>();
+  newEntry = OverlayEntry(
       builder: (context) => _ToastOverlay(
+            key: key,
             message: message,
             icon: icon,
             trailing: trailing,
+            onRemove: () => state?.remove(newEntry),
           ));
-
-  var state = context.findAncestorStateOfType<OverlayWidgetState>();
 
   state?.addOverlay(newEntry);
 
-  Timer(Duration(seconds: seconds ?? 2), () => state?.remove(newEntry));
+  Timer(Duration(seconds: seconds ?? 2), () => key.currentState?.dismiss());
 }
 
-class _ToastOverlay extends StatelessWidget {
-  const _ToastOverlay({required this.message, this.icon, this.trailing});
+class _ToastOverlay extends StatefulWidget {
+  const _ToastOverlay({
+    required this.message,
+    required this.onRemove,
+    this.icon,
+    this.trailing,
+    super.key,
+  });
 
   final String message;
 
   final Widget? icon;
 
   final Widget? trailing;
+
+  final VoidCallback onRemove;
+
+  @override
+  State<_ToastOverlay> createState() => _ToastOverlayState();
+}
+
+class _ToastOverlayState extends State<_ToastOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: kDurationNormal,
+  );
+
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: kCurve,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward();
+  }
+
+  /// 淡出后再真正移除 OverlayEntry，避免瞬间消失的生硬感。
+  void dismiss() {
+    if (!_controller.isCompleted) {
+      widget.onRemove();
+      return;
+    }
+    _controller.reverse().whenCompleteOrCancel(widget.onRemove);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,37 +86,48 @@ class _ToastOverlay extends StatelessWidget {
       right: 0,
       child: Align(
         alignment: Alignment.bottomCenter,
-        child: Material(
-          color: Theme.of(context).colorScheme.inverseSurface,
-          borderRadius: BorderRadius.circular(8),
-          elevation: 2,
-          textStyle:
-              ts.withColor(Theme.of(context).colorScheme.onInverseSurface),
-          child: IconTheme(
-            data: IconThemeData(
-                color: Theme.of(context).colorScheme.onInverseSurface),
-            child: IntrinsicWidth(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-                constraints: BoxConstraints(
-                  maxWidth: context.width - 32,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) icon!.paddingRight(8),
-                    Expanded(
-                      child: Text(
-                        message,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+        child: FadeTransition(
+          opacity: _fade,
+          child: SlideTransition(
+            position: Tween(
+              begin: const Offset(0, 0.2),
+              end: Offset.zero,
+            ).animate(_fade),
+            child: Material(
+              color: Theme.of(context).colorScheme.inverseSurface,
+              borderRadius: kBRS,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              textStyle:
+                  ts.withColor(Theme.of(context).colorScheme.onInverseSurface),
+              child: IconTheme(
+                data: IconThemeData(
+                    color: Theme.of(context).colorScheme.onInverseSurface),
+                child: IntrinsicWidth(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: kSpaceM, horizontal: kSpaceL),
+                    constraints: BoxConstraints(
+                      maxWidth: context.width - 32,
                     ),
-                    if (trailing != null) trailing!.paddingLeft(8)
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.icon != null) widget.icon!.paddingRight(8),
+                        Flexible(
+                          child: Text(
+                            widget.message,
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w500),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (widget.trailing != null)
+                          widget.trailing!.paddingLeft(8)
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -317,19 +376,21 @@ class ContentDialog extends StatelessWidget {
     );
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kBRL,
         side: context.brightness == Brightness.dark
-            ? BorderSide(color: context.colorScheme.outlineVariant)
+            ? BorderSide(
+                color: context.colorScheme.outlineVariant.withValues(alpha: 0.5))
             : BorderSide.none,
       ),
       insetPadding: context.width < 400
-          ? const EdgeInsets.symmetric(horizontal: 4)
-          : const EdgeInsets.symmetric(horizontal: 16),
-      elevation: 2,
-      shadowColor: context.colorScheme.shadow,
-      backgroundColor: context.colorScheme.surface,
+          ? const EdgeInsets.symmetric(horizontal: kSpaceXs)
+          : const EdgeInsets.symmetric(horizontal: kSpaceL),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      backgroundColor: context.colorScheme.surfaceContainerHigh,
       child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
+        duration: kDurationNormal,
+        curve: kCurve,
         alignment: Alignment.topCenter,
         child: IntrinsicWidth(
           child: ConstrainedBox(

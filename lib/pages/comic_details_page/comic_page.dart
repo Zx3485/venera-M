@@ -295,61 +295,66 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
     yield const SliverPadding(padding: EdgeInsets.only(top: 8));
 
     yield SliverLazyToBoxAdapter(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(width: 16),
-          GestureDetector(
-            onTap: () => _viewCover(context),
-            onLongPress: () => _saveCover(context),
-            child: Hero(
-              tag: "cover${widget.heroID}",
-              child: Container(
-                decoration: BoxDecoration(
-                  color: context.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.colorScheme.outlineVariant,
-                      blurRadius: 1,
-                      offset: const Offset(0, 1),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(26, 8, 26, 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 直角封面：杂志版最标志性的一条——圆角换成直角 + 硬阴影，
+            // 从「App 卡片」变成「贴在纸上的一张图」。
+            GestureDetector(
+              onTap: () => _viewCover(context),
+              onLongPress: () => _saveCover(context),
+              child: Hero(
+                tag: "cover${widget.heroID}",
+                child: EditorialCover(
+                  width: 98,
+                  height: 138,
+                  child: AnimatedImage(
+                    image: CachedImageProvider(
+                      widget.cover ?? comic.cover,
+                      sourceKey: comic.sourceKey,
+                      cid: comic.id,
                     ),
-                  ],
-                ),
-                height: 144,
-                width: 144 * 0.72,
-                clipBehavior: Clip.antiAlias,
-                child: AnimatedImage(
-                  image: CachedImageProvider(
-                    widget.cover ?? comic.cover,
-                    sourceKey: comic.sourceKey,
-                    cid: comic.id,
+                    width: double.infinity,
+                    height: double.infinity,
                   ),
-                  width: double.infinity,
-                  height: double.infinity,
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SelectableText(comic.title, style: ts.s18),
-                if (comic.subTitle != null)
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Kicker(
+                    (ComicSource.find(comic.sourceKey)?.name)?.toUpperCase() ??
+                        '',
+                  ),
+                  const SizedBox(height: 8),
                   SelectableText(
-                    comic.subTitle!,
-                    style: ts.s14,
-                  ).paddingVertical(4),
-                Text(
-                  (ComicSource.find(comic.sourceKey)?.name) ?? '',
-                  style: ts.s12,
-                ),
-              ],
+                    comic.title,
+                    style: kSerifStyle(
+                      fontSize: 23,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.6,
+                      height: 1.24,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                  if (comic.subTitle != null)
+                    SelectableText(
+                      comic.subTitle!,
+                      style: ts.s12.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                        letterSpacing: 0.3,
+                      ),
+                    ).paddingVertical(8),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -369,21 +374,21 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                   icon: const Icon(Icons.menu_book),
                   text: 'Continue'.tl,
                   onPressed: continueRead,
-                  iconColor: context.useTextColor(Colors.yellow),
+                  iconColor: context.useTextColor(kSoftAmber),
                 ),
               if (!isMobile || hasHistory)
                 _ActionButton(
                   icon: const Icon(Icons.play_circle_outline),
                   text: 'Start'.tl,
                   onPressed: read,
-                  iconColor: context.useTextColor(Colors.orange),
+                  iconColor: context.useTextColor(kSoftAmber),
                 ),
               if (!isMobile && !isDownloaded)
                 _ActionButton(
                   icon: const Icon(Icons.download),
                   text: 'Download'.tl,
                   onPressed: download,
-                  iconColor: context.useTextColor(Colors.cyan),
+                  iconColor: context.useTextColor(kSoftTeal),
                 ),
               if (data!.isLiked != null)
                 _ActionButton(
@@ -397,7 +402,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                           .toString(),
                   isLoading: isLiking,
                   onPressed: likeOrUnlike,
-                  iconColor: context.useTextColor(Colors.red),
+                  iconColor: context.useTextColor(kSoftRed),
                 ),
               _ActionButton(
                 icon: const Icon(Icons.bookmark_outline_outlined),
@@ -406,55 +411,82 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 text: 'Favorite'.tl,
                 onPressed: openFavPanel,
                 onLongPressed: quickFavorite,
-                iconColor: context.useTextColor(Colors.purple),
+                iconColor: context.useTextColor(kSoftPurple),
               ),
               if (comicSource.commentsLoader != null)
                 _ActionButton(
                   icon: const Icon(Icons.comment),
                   text: (comic.commentCount ?? 'Comments'.tl).toString(),
                   onPressed: showComments,
-                  iconColor: context.useTextColor(Colors.green),
+                  iconColor: context.useTextColor(kSoftGreen),
                 ),
               _ActionButton(
                 icon: const Icon(Icons.share),
                 text: 'Share'.tl,
                 onPressed: share,
-                iconColor: context.useTextColor(Colors.blue),
+                iconColor: context.useTextColor(kSoftBlue),
               ),
             ],
           ).fixHeight(48),
           if (isMobile)
             Row(
               children: [
+                // 墨韵：主 CTA 反色块（暗色下纸白、亮色下墨黑），次操作幽灵按钮
                 Expanded(
-                  child: FilledButton.tonal(
+                  child: _InkGhostButton(
+                    text: 'Download'.tl,
                     onPressed: download,
-                    child: Text("Download".tl),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: hasHistory
-                      ? FilledButton(
-                          onPressed: continueRead,
-                          child: Text("Continue".tl),
-                        )
-                      : FilledButton(onPressed: read, child: Text("Read".tl)),
+                  child: _InkCtaButton(
+                    text: (hasHistory ? 'Continue' : 'Read').tl,
+                    onPressed: hasHistory ? continueRead : read,
+                  ),
                 ),
               ],
             ).paddingHorizontal(16).paddingVertical(8),
+          // 「最后一话」快捷入口。
+          // 原来想看最新一话得先展开章节、再滚到最底——
+          // 这个按钮直接在首屏给出一条通道。
+          if (comic.chapters != null && comic.chapters!.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: EditorialJumpButton(
+                      label: 'First'.tl,
+                      icon: Icons.first_page,
+                      onTap: () => read(1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: EditorialJumpButton(
+                      label:
+                          '${'Latest'.tl} · ${comic.chapters!.length}',
+                      icon: Icons.last_page,
+                      primary: true,
+                      onTap: () => read(comic.chapters!.length),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (history != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: kCorner(context),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.history, color: context.useTextColor(Colors.teal)),
+                  Icon(Icons.history, color: context.useTextColor(kSoftTeal)),
                   const SizedBox(width: 8),
                   Builder(
                     builder: (context) {
@@ -539,24 +571,23 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
     }) {
       Color color;
       if (isTitle) {
-        const colors = [
-          Colors.blue,
-          Colors.cyan,
-          Colors.red,
-          Colors.pink,
-          Colors.purple,
-          Colors.indigo,
-          Colors.teal,
-          Colors.green,
-          Colors.lime,
-          Colors.yellow,
+        // 低饱和语义色板：与主题色相统一，深浅主题下都柔和
+        final colors = [
+          kSoftBlue,
+          kSoftTeal,
+          kSoftRed,
+          kSoftPink,
+          kSoftPurple,
+          kSoftIndigo,
+          kSoftGreen,
+          kSoftAmber,
         ];
         color = context.useBackgroundColor(colors[(i++) % (colors.length)]);
       } else {
         color = context.colorScheme.surfaceContainerLow;
       }
 
-      final borderRadius = BorderRadius.circular(12);
+      final borderRadius = kCorner(context, scale: 0.6);
 
       const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 6);
 
@@ -813,7 +844,7 @@ class _ActionButton extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: kCorner(context, scale: 0.8),
         border: Border.all(
           color: context.colorScheme.outlineVariant,
           width: 0.6,
@@ -826,7 +857,7 @@ class _ActionButton extends StatelessWidget {
           }
         },
         onLongPress: onLongPressed,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: kCorner(context, scale: 0.8),
         child: IconTheme.merge(
           data: IconThemeData(size: 20, color: iconColor),
           child: Row(
@@ -1049,7 +1080,7 @@ class _ComicPageLoadingPlaceHolder extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: context.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           boxShadow: [
             BoxShadow(
               color: context.colorScheme.outlineVariant,
@@ -1062,6 +1093,86 @@ class _ComicPageLoadingPlaceHolder extends StatelessWidget {
         width: 144 * 0.72,
         clipBehavior: Clip.antiAlias,
         child: child,
+      ),
+    );
+  }
+}
+
+/// 墨韵主 CTA：反色实心块 —— 暗色模式下纸白底墨黑字，亮色下相反。
+/// 整页唯一的强对比元素，替代 M3 FilledButton 的彩色药丸。
+class _InkCtaButton extends StatelessWidget {
+  const _InkCtaButton({required this.text, required this.onPressed});
+
+  final String text;
+  final void Function() onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    // 圆角跟随外观设置（cornerStyle）。原来是写死的 kRadiusXs=6，
+    // 和上下两排按钮凑出三种圆角，视觉很碎。
+    final radius = kCorner(context, scale: 0.6);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: radius,
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: context.colorScheme.onSurface,
+            borderRadius: radius,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: context.colorScheme.surface,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 墨韵次操作：hairline 描边幽灵按钮。
+class _InkGhostButton extends StatelessWidget {
+  const _InkGhostButton({required this.text, required this.onPressed});
+
+  final String text;
+  final void Function() onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = kCorner(context, scale: 0.6);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: radius,
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: context.colorScheme.outlineVariant.withValues(alpha: 0.6),
+              width: kBorderHairline,
+            ),
+            borderRadius: radius,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: context.colorScheme.onSurfaceVariant,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
       ),
     );
   }
