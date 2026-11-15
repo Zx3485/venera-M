@@ -25,7 +25,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # 从 pubspec.yaml 读版本号，release tag 与 App 内显示的版本要对齐
       - name: Read version
@@ -127,7 +127,7 @@ jobs:
           Compress-Archive -Path "$src/*" -DestinationPath "build/$out" -Force
           Get-Item "build/$out" | Format-List Name, Length
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: venera-windows
           path: build/Venera-*-windows-x64.zip

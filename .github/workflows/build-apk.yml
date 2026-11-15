@@ -31,7 +31,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # 固定签名：没有它每次构建的 debug keystore 都不同，新包无法覆盖安装。
       # 需要两个 Secret：KEYSTORE_BASE64（key.jks 的 base64）、KEYSTORE_PROPS（key.properties 全文）
@@ -126,7 +126,7 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: venera-apk
           path: build/app/outputs/apk/release/*.apk
