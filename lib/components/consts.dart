@@ -247,3 +247,65 @@ const double kPillNavReserved =
 /// 胶囊底栏里单个条目的宽度（图标 + 文字）
 const double kPillNavItemWidth = 58.0;
 
+// ─────────────── 圆角风格（用户可切）───────────────
+//
+// 杂志排版本来的语言是直角（贴在纸上的一张图），但有人更喜欢圆角的柔和。
+// 做成设置项而不是写死，免得替用户做审美决定。
+//
+// 设置键 cornerStyle：
+//   'square'  直角 —— 杂志原味（默认）
+//   'soft'    小圆角 —— 温和，接近原来的观感
+//   'round'   大圆角 —— 明显圆润
+
+/// 圆角风格对应的基准半径。
+///
+/// 各处组件都从 [kCornerRadius] 取半径，再按自己的层级缩放：
+/// 封面用 1.0 倍，章节格/按钮用 0.6 倍，胶囊底栏固定全圆不参与。
+double kCornerRadius(BuildContext context) {
+  final style = appdata.settings['cornerStyle'];
+  return switch (style) {
+    'square' => 0.0,
+    'round' => 18.0,
+    _ => 10.0, // soft，也是缺省
+  };
+}
+
+/// 按基准半径缩放后的圆角。
+///
+/// [scale] 控制这一处比基准更方还是更圆：
+///   1.0 = 和基准一致（封面、面板）
+///   0.6 = 更收敛（章节格、小按钮）
+///   0.0 = 强制直角（分割线附近的元素）
+BorderRadius kCorner(BuildContext context, {double scale = 1.0}) {
+  final r = kCornerRadius(context) * scale;
+  return BorderRadius.circular(r);
+}
+
+/// 圆角风格在「直角」档位下，是否要顺带收紧描边/阴影。
+///
+/// 直角风格靠硬阴影表达层级；圆角风格用软阴影更协调。
+bool kIsSquareCorner(BuildContext context) =>
+    (appdata.settings['cornerStyle'] ?? 'square') == 'square';
+
+/// 封面类元素的阴影：直角用硬阴影（贴纸感），圆角用软阴影。
+List<BoxShadow> kCoverShadows(BuildContext context) {
+  final dark = context.isDarkMode;
+  if (kIsSquareCorner(context)) {
+    return [
+      BoxShadow(
+        color: Colors.black.toOpacity(dark ? 0.34 : 0.16),
+        offset: const Offset(4, 4),
+        blurRadius: 0,
+      ),
+    ];
+  }
+  return [
+    BoxShadow(
+      color: Colors.black.toOpacity(dark ? 0.42 : 0.18),
+      offset: const Offset(0, 3),
+      blurRadius: 8,
+    ),
+  ];
+}
+
+

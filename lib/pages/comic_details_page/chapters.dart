@@ -1,8 +1,8 @@
-part of 'comic_page.dart';
+﻿part of 'comic_page.dart';
 
-/// 分组模式的章节格：标题是文字（「第 42 话」），不能缩成数字。
+/// 鍒嗙粍妯″紡鐨勭珷鑺傛牸锛氭爣棰樻槸鏂囧瓧锛堛€岀 42 璇濄€嶏級锛屼笉鑳界缉鎴愭暟瀛椼€?
 ///
-/// 结构和 [_ChapterCell] 一致，只是文字允许省略号。
+/// 缁撴瀯鍜?[_ChapterCell] 涓€鑷达紝鍙槸鏂囧瓧鍏佽鐪佺暐鍙枫€?
 class _ChapterLabelCell extends StatelessWidget {
   const _ChapterLabelCell({
     required this.label,
@@ -22,13 +22,13 @@ class _ChapterLabelCell extends StatelessWidget {
       color: visited
           ? scheme.surfaceContainerHigh.toOpacity(0.55)
           : Colors.transparent,
-      borderRadius: BorderRadius.circular(kRadiusXs),
+      borderRadius: kCorner(context, scale: 0.6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(kRadiusXs),
+        borderRadius: kCorner(context, scale: 0.6),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(kRadiusXs),
+            borderRadius: kCorner(context, scale: 0.6),
             border: Border.all(
               color: scheme.outlineVariant,
               width: kRuleHair,
@@ -57,23 +57,23 @@ class _ChapterLabelCell extends StatelessWidget {
   }
 }
 
-/// 章节网格的列数。
+/// 绔犺妭缃戞牸鐨勫垪鏁般€?
 ///
-/// 折叠上限和网格本身必须用同一个算法，否则「显示全部」前后
-/// 每行格子数会跳变。手机（约 400dp）换算约 5 列，
-/// 一屏能看到 15 话，比原来 2 列 / 48 高的版本多一倍多。
+/// 鎶樺彔涓婇檺鍜岀綉鏍兼湰韬繀椤荤敤鍚屼竴涓畻娉曪紝鍚﹀垯銆屾樉绀哄叏閮ㄣ€嶅墠鍚?
+/// 姣忚鏍煎瓙鏁颁細璺冲彉銆傛墜鏈猴紙绾?400dp锛夋崲绠楃害 5 鍒楋紝
+/// 涓€灞忚兘鐪嬪埌 15 璇濓紝姣斿師鏉?2 鍒?/ 48 楂樼殑鐗堟湰澶氫竴鍊嶅銆?
 int _chapterGridColumns(double crossAxisExtent) {
-  // 扣掉左右各 26 的内边距
+  // 鎵ｆ帀宸﹀彸鍚?26 鐨勫唴杈硅窛
   final usable = crossAxisExtent - 52;
-  // 目标格宽约 54dp（放得下 3 位数字 + 边距）
+  // 鐩爣鏍煎绾?54dp锛堟斁寰椾笅 3 浣嶆暟瀛?+ 杈硅窛锛?
   final cols = (usable / 54).floor();
   return cols.clamp(3, 8);
 }
 
-/// 只显示数字的章节格。
+/// 鍙樉绀烘暟瀛楃殑绔犺妭鏍笺€?
 ///
-/// 杂志版把「第 42 话」缩减成「42」——省下的横向空间让列数翻倍。
-/// 已读用钢红数字 + 淡底标出，而不是整格变灰。
+/// 鏉傚織鐗堟妸銆岀 42 璇濄€嶇缉鍑忔垚銆?2銆嶁€斺€旂渷涓嬬殑妯悜绌洪棿璁╁垪鏁扮炕鍊嶃€?
+/// 宸茶鐢ㄩ挗绾㈡暟瀛?+ 娣″簳鏍囧嚭锛岃€屼笉鏄暣鏍煎彉鐏般€?
 class _ChapterCell extends StatelessWidget {
   const _ChapterCell({
     required this.label,
@@ -93,13 +93,13 @@ class _ChapterCell extends StatelessWidget {
       color: visited
           ? scheme.surfaceContainerHigh.toOpacity(0.55)
           : Colors.transparent,
-      borderRadius: BorderRadius.circular(kRadiusXs),
+      borderRadius: kCorner(context, scale: 0.6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(kRadiusXs),
+        borderRadius: kCorner(context, scale: 0.6),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(kRadiusXs),
+            borderRadius: kCorner(context, scale: 0.6),
             border: Border.all(
               color: scheme.outlineVariant,
               width: kRuleHair,
@@ -188,8 +188,8 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
       builder: (context, constrains) {
         int length = chapters.length;
         bool canShowAll = showAll;
-        // 折叠上限：用和网格完全一致的列数算法，否则「显示全部」前后
-        // 每行能放的格子数不一样，看起来像跳变。
+        // 鎶樺彔涓婇檺锛氱敤鍜岀綉鏍煎畬鍏ㄤ竴鑷寸殑鍒楁暟绠楁硶锛屽惁鍒欍€屾樉绀哄叏閮ㄣ€嶅墠鍚?
+        // 姣忚鑳芥斁鐨勬牸瀛愭暟涓嶄竴鏍凤紝鐪嬭捣鏉ュ儚璺冲彉銆?
         final columns = _chapterGridColumns(constrains.crossAxisExtent);
         if (!showAll) {
           length = math.min(length, columns * 8);
@@ -216,7 +216,7 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
                   children: [
                     Expanded(
                       child: EditorialJumpButton(
-                        label: reverse ? "${chapters.length} → 1" : "1 → ${chapters.length}",
+                        label: reverse ? "${chapters.length} 鈫?1" : "1 鈫?${chapters.length}",
                         icon: reverse
                             ? Icons.arrow_upward
                             : Icons.arrow_downward,
@@ -248,8 +248,8 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
                     i = chapters.length - i - 1;
                   }
                   final chapterNo = i + 1;
-                  // readEpisode 是 Set<String>，原来传的是 int i+1，
-                  // 类型不匹配导致「已读变灰」从未生效过。
+                  // readEpisode 鏄?Set<String>锛屽師鏉ヤ紶鐨勬槸 int i+1锛?
+                  // 绫诲瀷涓嶅尮閰嶅鑷淬€屽凡璇诲彉鐏般€嶄粠鏈敓鏁堣繃銆?
                   bool visited =
                       (history?.readEpisode ?? {}).contains('$chapterNo');
                   return _ChapterCell(
@@ -364,7 +364,7 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
         var group = chapters.getGroupByIndex(index);
         int length = group.length;
         bool canShowAll = showAll;
-        // 和网格用同一个列数算法（原来是写死的 200，和网格的 250 对不上）
+        // 鍜岀綉鏍肩敤鍚屼竴涓垪鏁扮畻娉曪紙鍘熸潵鏄啓姝荤殑 200锛屽拰缃戞牸鐨?250 瀵逛笉涓婏級
         final columns = _chapterGridColumns(constrains.crossAxisExtent);
         if (!showAll) {
           length = math.min(length, columns * 8);
@@ -390,8 +390,8 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
                     Expanded(
                       child: EditorialJumpButton(
                         label: reverse
-                            ? "${group.length} → 1"
-                            : "1 → ${group.length}",
+                            ? "${group.length} 鈫?1"
+                            : "1 鈫?${group.length}",
                         icon: reverse
                             ? Icons.arrow_upward
                             : Icons.arrow_downward,
@@ -409,7 +409,7 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
                         icon: Icons.last_page,
                         primary: true,
                         onTap: () {
-                          // 跳到本分组最后一话：先累加前面所有分组的话数
+                          // 璺冲埌鏈垎缁勬渶鍚庝竴璇濓細鍏堢疮鍔犲墠闈㈡墍鏈夊垎缁勭殑璇濇暟
                           var offset = 0;
                           for (var j = 0; j < index; j++) {
                             offset += chapters.getGroupByIndex(j).length;
@@ -454,8 +454,8 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
                     visited = history!.readEpisode.contains(groupedIndex) ||
                         history!.readEpisode.contains(rawIndex);
                   }
-                  // 分组模式的标题是文字（「第 42 话」），不能只显示数字，
-                  // 所以这里保留文字格，只统一网格密度和圆角。
+                  // 鍒嗙粍妯″紡鐨勬爣棰樻槸鏂囧瓧锛堛€岀 42 璇濄€嶏級锛屼笉鑳藉彧鏄剧ず鏁板瓧锛?
+                  // 鎵€浠ヨ繖閲屼繚鐣欐枃瀛楁牸锛屽彧缁熶竴缃戞牸瀵嗗害鍜屽渾瑙掋€?
                   return _ChapterLabelCell(
                     label: value,
                     visited: visited,

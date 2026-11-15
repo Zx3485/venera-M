@@ -1108,17 +1108,20 @@ class _InkCtaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 圆角跟随外观设置（cornerStyle）。原来是写死的 kRadiusXs=6，
+    // 和上下两排按钮凑出三种圆角，视觉很碎。
+    final radius = kCorner(context, scale: 0.6);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(kRadiusXs),
+        borderRadius: radius,
         child: Container(
           height: 48,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: context.colorScheme.onSurface,
-            borderRadius: BorderRadius.circular(kRadiusXs),
+            borderRadius: radius,
           ),
           child: Text(
             text,
@@ -1144,11 +1147,12 @@ class _InkGhostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = kCorner(context, scale: 0.6);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(kRadiusXs),
+        borderRadius: radius,
         child: Container(
           height: 48,
           alignment: Alignment.center,
@@ -1157,7 +1161,7 @@ class _InkGhostButton extends StatelessWidget {
               color: context.colorScheme.outlineVariant.withValues(alpha: 0.6),
               width: kBorderHairline,
             ),
-            borderRadius: BorderRadius.circular(kRadiusXs),
+            borderRadius: radius,
           ),
           child: Text(
             text,

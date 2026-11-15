@@ -324,16 +324,22 @@ class NaviPaneState extends State<NaviPane>
 
     // 条目行：图标 + 8px 标签。选中态是「钢红底 + 下方短横线」，
     // 和杂志排版的栏目选中标记同源。
+    //
+    // 注意：必须用 max + spaceEvenly，不能用 min。
+    // 外层 Container 撑满宽度且没有 alignment，min 的 Row 会贴左上，
+    // 条目全挤在左边、右边空一大块——这正是实机截图暴露的问题。
     final items = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: List<Widget>.generate(widget.paneItems.length, (index) {
-        return _SingleBottomNaviWidget(
-          enabled: currentPage == index,
-          entry: widget.paneItems[index],
-          onTap: () {
-            updatePage(index);
-          },
-          key: ValueKey(index),
+        return Flexible(
+          child: _SingleBottomNaviWidget(
+            enabled: currentPage == index,
+            entry: widget.paneItems[index],
+            onTap: () {
+              updatePage(index);
+            },
+            key: ValueKey(index),
+          ),
         );
       }),
     );
@@ -598,8 +604,8 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
 
   Widget buildContent() {
     // 选中进度 0→1，用于图标缩放和短横线的淡入。
-    // 注意：原来这里有一个 32 + value*32 的「胶囊展开」动画，那是按
-    // 「纯图标」设计的宽度。现在格子固定 58 宽还要放 8px 文字，
+    // 原来这里有一个 32 + value*32 的「胶囊展开」动画，那是按
+    // 「纯图标」设计的宽度。现在格子里还要放 8px 文字，
     // 再展开就会撑爆，所以改成缩放 + 指示线淡入。
     final value = controller.value;
     final scheme = Theme.of(context).colorScheme;
@@ -619,29 +625,39 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: widget.onTap,
+        // 尺寸交给父级的 Flexible 决定（胶囊内部是 spaceEvenly 均分），
+        // 不再写死 kPillNavItemWidth——写死的话条目数一变就溢出。
         child: SizedBox(
-          width: kPillNavItemWidth,
+          height: kPillNavHeight,
           child: Stack(
             alignment: Alignment.center,
             children: [
               // hover 时的柔和底
               if (isHovering)
-                Container(
-                  width: kPillNavItemWidth - 4,
-                  height: kPillNavHeight - 8,
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHigh.toOpacity(0.5),
-                    borderRadius: BorderRadius.circular(kRadiusM),
+                Positioned.fill(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 3,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHigh.toOpacity(0.5),
+                      borderRadius: BorderRadius.circular(kRadiusM),
+                    ),
                   ),
                 ),
               // 选中底：淡钢红填充
               if (selected)
-                Container(
-                  width: kPillNavItemWidth - 4,
-                  height: kPillNavHeight - 8,
-                  decoration: BoxDecoration(
-                    color: rust.toOpacity(0.10 * value),
-                    borderRadius: BorderRadius.circular(kRadiusM),
+                Positioned.fill(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 3,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: rust.toOpacity(0.10 * value),
+                      borderRadius: BorderRadius.circular(kRadiusM),
+                    ),
                   ),
                 ),
               Column(

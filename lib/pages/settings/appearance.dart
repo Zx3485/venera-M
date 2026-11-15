@@ -69,6 +69,20 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             App.forceRebuild();
           },
         ).toSliver(),
+        // 圆角风格：封面、章节格、按钮、面板都跟着变。
+        // 杂志原味是直角，但审美因人而异，交给用户自己定。
+        SelectSetting(
+          title: "圆角风格".tl,
+          settingKey: "cornerStyle",
+          optionTranslation: {
+            "square": "直角 · 杂志原味".tl,
+            "soft": "小圆角 · 温和".tl,
+            "round": "大圆角 · 圆润".tl,
+          },
+          onChanged: () async {
+            App.forceRebuild();
+          },
+        ).toSliver(),
 
         // ───────────────── 主页板块 ─────────────────
         _SettingPartTitle(title: "Home Page".tl, icon: Icons.dashboard_customize),

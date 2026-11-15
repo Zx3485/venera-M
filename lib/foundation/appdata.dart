@@ -195,6 +195,8 @@ class Settings with ChangeNotifier {
     // 分界面开关：阅读器工具栏 / 列表页标题栏
     'glassInReader': true,
     'glassInAppBar': true,
+    // 圆角风格：square=直角(杂志原味) / soft=小圆角 / round=大圆角
+    'cornerStyle': 'square',
     'newFavoriteAddTo': 'end', // start, end
     'moveFavoriteAfterRead': 'none', // none, end, start
     'proxy': 'system', // direct, system, proxy string

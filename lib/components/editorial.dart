@@ -197,6 +197,9 @@ class IndexNum extends StatelessWidget {
 ///
 /// 杂志版和原来最大的差别之一：圆角 10 → 直角。
 /// 加上一层很轻的硬阴影，像「贴在纸上的一张图」。
+///
+/// 圆角跟随设置项 cornerStyle：直角档用硬阴影贴纸感，
+/// 圆角档用软阴影，避免「圆角配硬阴影」的违和。
 class EditorialCover extends StatelessWidget {
   const EditorialCover({
     super.key,
@@ -221,17 +224,8 @@ class EditorialCover extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerHighest,
-        boxShadow: shadow
-            ? [
-                BoxShadow(
-                  color: Colors.black.toOpacity(
-                    context.isDarkMode ? 0.34 : 0.16,
-                  ),
-                  offset: const Offset(4, 4),
-                  blurRadius: 0,
-                ),
-              ]
-            : null,
+        borderRadius: kCorner(context),
+        boxShadow: shadow ? kCoverShadows(context) : null,
       ),
       child: child,
     );
@@ -395,10 +389,12 @@ class EditorialJumpButton extends StatelessWidget {
       flex: flex,
       child: InkWell(
         onTap: onTap,
+        borderRadius: kCorner(context, scale: 0.6),
         child: Container(
           height: 40,
           decoration: BoxDecoration(
             color: bg,
+            borderRadius: kCorner(context, scale: 0.6),
             border: Border.all(
               color: primary ? scheme.onSurface : scheme.outlineVariant,
               width: kRuleHair,
