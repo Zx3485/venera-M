@@ -165,6 +165,15 @@ const Color kInkLightBg = Color(0xFFFAFAF8);
 /// 墨灰种子色：生成近乎无彩的 colorScheme
 const Color kInkSeed = Color(0xFF8A8F98);
 
+/// 钢红种子色：colorScheme.primary / secondary 的来源。
+///
+/// 杂志版只有一个暖色信号。用它做种子后：
+///   - 35 处 `colorScheme.primary`（按钮、Tab 选中、下拉箭头、
+///     收藏态、章节选中）自动变成钢红，无需逐个改引用
+///   - 明暗两套主题各自生成合适明度，比硬编码 kRustColor 更稳
+///   - `tertiary` 走 kInkSeed，保持中性
+const Color kRustSeed = Color(0xFFA4522C);
+
 /// 衬线字体（大标题用，回退到无衬线不影响可用性）
 const String kSerifFontFamily = 'Noto Serif SC';
 const List<String> kSerifFontFallback = [

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -127,37 +126,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     setState(() {});
   }
 
-  Color translateColorSetting() {
-    return switch (appdata.settings['color']) {
-      'red' => Colors.red,
-      'pink' => Colors.pink,
-      'purple' => Colors.purple,
-      'green' => Colors.green,
-      'orange' => Colors.orange,
-      'blue' => Colors.blue,
-      'yellow' => Colors.yellow,
-      'cyan' => Colors.cyan,
-      // 低饱和柔和色：模仿 iOS / Material You 的克制配色，
-      // 上屏比 Flutter 内置标准色更耐看。
-      'mistBlue' => const Color(0xFF6B8CAE),   // 雾霾蓝
-      'lilac' => const Color(0xFF9B84A8),      // 藕荷紫
-      'sage' => const Color(0xFF7A9A7E),       // 鼠尾草绿
-      'slate' => const Color(0xFF7A7E85),      // 岩灰
-      'coral' => const Color(0xFFE08080),      // 珊瑚
-      'matcha' => const Color(0xFFA8B89A),     // 抹茶
-      'sand' => const Color(0xFFC4A882),       // 暖沙
-      'dusk' => const Color(0xFF8E7CA6),       // 暮紫
-      'ink' => kInkSeed,                        // 墨：近乎无彩的墨灰
-      _ => Colors.blue,
-    };
-  }
-
-  ThemeData getTheme(
-    Color primary,
-    Color? secondary,
-    Color? tertiary,
-    Brightness brightness,
-  ) {
+  // 杂志版配色固定：钢红种子生成强调色，墨灰负责中性色。
+  // 用户不再需要选主色。旧的 translateColorSetting() 已移除；
+  // 设置键 color 保留仅为兼容旧配置（不再读取）。
+  //
+  // 为什么用钢红做 primary 种子：
+  //   全应用有 35 处 colorScheme.primary、8 处 secondary，
+  //   集中在按钮、Tab 选中态、下拉箭头、收藏态、章节选中态。
+  //   这些正好都是「交互强调」的语义，把种子换成钢红后
+  //   它们自动变成钢红，无需逐个改引用；
+  //   而且明暗两套主题会各自生成合适的明度，
+  //   不像硬编码 kRustColor 那样在暗色下偏暗。
+  ThemeData getTheme(Brightness brightness) {
     String? font;
     List<String>? fallback;
     if (App.isLinux || App.isWindows) {
@@ -174,9 +154,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ];
     }
     var scheme = SeedColorScheme.fromSeeds(
-      primaryKey: primary,
-      secondaryKey: secondary,
-      tertiaryKey: tertiary,
+      primaryKey: kRustSeed,
+      secondaryKey: kRustSeed,
+      tertiaryKey: kInkSeed,
       brightness: brightness,
       tones: FlexTones.vividBackground(brightness),
     );
@@ -285,28 +265,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     } else {
       home = const MainPage();
     }
-    return DynamicColorBuilder(builder: (light, dark) {
-      Color? primary, secondary, tertiary;
-      if (appdata.settings['color'] != 'system' ||
-          light == null ||
-          dark == null) {
-        primary = translateColorSetting();
-      } else {
-        primary = light.primary;
-        secondary = light.secondary;
-        tertiary = light.tertiary;
-      }
-      return MaterialApp(
-        title: "Paperbound",
-        home: home,
-        debugShowCheckedModeBanner: false,
-        theme: getTheme(primary, secondary, tertiary, Brightness.light),
-        navigatorKey: App.rootNavigatorKey,
-        darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
-        themeMode: switch (appdata.settings['theme_mode']) {
-          'light' => ThemeMode.light,
-          'dark' => ThemeMode.dark,
-          _ => ThemeMode.system
+    // 配色固定为墨色种子：不再读 settings['color']，
+    // 也不再跟随系统动态取色（DynamicColorBuilder）——
+    // 杂志版的调性是「纸与墨」，任何彩色主色都会破坏它。
+    // 唯一暖色信号是 kRustColor（钢红）。
+    return MaterialApp(
+      title: "Paperbound",
+      home: home,
+      debugShowCheckedModeBanner: false,
+      theme: getTheme(Brightness.light),
+      navigatorKey: App.rootNavigatorKey,
+      darkTheme: getTheme(Brightness.dark),
+      themeMode: switch (appdata.settings['theme_mode']) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system
         },
         color: Colors.transparent,
         localizationsDelegates: [
@@ -384,7 +357,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           throw ('widget is null');
         },
       );
-    });
   }
 }
 

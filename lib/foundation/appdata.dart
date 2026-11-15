@@ -179,7 +179,10 @@ class Settings with ChangeNotifier {
   final _data = <String, dynamic>{
     'comicDisplayMode': 'detailed', // detailed, brief
     'comicTileScale': 1.00, // 0.75-1.25
-    'color': 'ink', // red, pink, purple, green, orange, blue ... ink=墨韵
+    // 已废弃：杂志版配色固定为墨色 + 钢红，不再读这个键。
+    // 保留默认值是为了兼容旧同步数据（云端备份里可能存着别的色名，
+    // 删掉这个键会走进「未定义」分支，反而更容易出问题）。
+    'color': 'ink',
     'theme_mode': 'system', // light, dark, system
     // 页面切换动画。default=平台原生；其余见 AppPageTransition
     'pageTransition': 'default',

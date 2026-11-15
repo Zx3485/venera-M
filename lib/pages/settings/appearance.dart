@@ -25,35 +25,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             App.forceRebuild();
           },
         ).toSliver(),
-        SelectSetting(
-          title: "Theme Color".tl,
-          settingKey: "color",
-          optionTranslation: {
-            "system": "跟随系统".tl,
-            "red": "红".tl,
-            "pink": "粉".tl,
-            "purple": "紫".tl,
-            "green": "绿".tl,
-            "orange": "橙".tl,
-            "blue": "蓝".tl,
-            "yellow": "黄".tl,
-            "cyan": "青".tl,
-            // 低饱和色
-            "mistBlue": "雾霾蓝".tl,
-            "lilac": "藕荷紫".tl,
-            "sage": "鼠尾草绿".tl,
-            "slate": "岩灰".tl,
-            "coral": "珊瑚".tl,
-            "matcha": "抹茶".tl,
-            "sand": "暖沙".tl,
-            "dusk": "暮紫".tl,
-            "ink": "墨".tl,
-          },
-          onChanged: () async {
-            await App.init();
-            App.forceRebuild();
-          },
-        ).toSliver(),
+        // 主题色选项已移除：杂志版的配色由墨色 + 钢红决定，
+        // 用户可调的主色只会让版面偏离「纸与墨」的调性。
+        // 设置键 color 保留在 appdata 里做兼容，但不再读取。
         SelectSetting(
           title: "Page Transition".tl,
           settingKey: "pageTransition",
