@@ -254,7 +254,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
       ),
       listTileTheme: ListTileThemeData(
-        shape: RoundedRectangleBorder(borderRadius: kBRM),
+        // 跟随外观设置的圆角风格。
+        // 原来固定 kBRM=14，导致用户选「直角」时设置页仍是圆的。
+        // getTheme 是静态方法没有 BuildContext，直接读 settings。
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kCornerRadiusFromSetting()),
+        ),
       ),
       visualDensity: VisualDensity.standard,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

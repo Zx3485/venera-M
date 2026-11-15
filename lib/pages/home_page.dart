@@ -139,13 +139,13 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 墨韵：下划线式搜索条，不再是胶囊
+    // 下划线式搜索条，和杂志排版一致（不是胶囊、不是卡片）。
     var dim = context.colorScheme.onSurfaceVariant;
     return SliverToBoxAdapter(
       child: Container(
         height: 48,
         width: double.infinity,
-        margin: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+        margin: const EdgeInsets.fromLTRB(kPageInset, 14, kPageInset, 6),
         child: InkWell(
           onTap: () {
             context.to(() => const SearchPage());
@@ -155,7 +155,7 @@ class _SearchBar extends StatelessWidget {
               border: Border(
                 bottom: BorderSide(
                   color: context.colorScheme.outlineVariant.withValues(alpha: 0.55),
-                  width: 1,
+                  width: kRuleHair,
                 ),
               ),
             ),
@@ -220,90 +220,122 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
     Widget child;
     if (!DataSync().isEnabled) {
       child = const SliverPadding(padding: EdgeInsets.zero);
-    } else if (DataSync().isUploading || DataSync().isDownloading) {
-      child = SliverToBoxAdapter(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.sync),
-            title: Text('Syncing Data'.tl),
-            trailing: const CircularProgressIndicator(strokeWidth: 2)
-                .fixWidth(18)
-                .fixHeight(18),
-          ),
-        ),
-      );
     } else {
+      final busy = DataSync().isUploading || DataSync().isDownloading;
+      // 杂志式：不再是一个描边圆角容器，而是「上下 hairline 夹一行」。
+      // 左边一个状态标记（同步中转圈 / 空闲灰点 / 出错红点），
+      // 中间是文字，右边两个图标按钮。
       child = SliverToBoxAdapter(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.sync),
-            title: Text('Sync Data'.tl),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (DataSync().lastError != null)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      showDialogMessage(
-                        App.rootContext,
-                        "Error".tl,
-                        DataSync().lastError!,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: context.colorScheme.error,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 4),
-                          Text('Error'.tl, style: ts.s12),
-                        ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(kPageInset, 0, kPageInset, 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HairRule(),
+              SizedBox(
+                height: 52,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Center(
+                        child: busy
+                            ? SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.6,
+                                  color: kRustColor(context),
+                                ),
+                              )
+                            : Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: DataSync().lastError != null
+                                      ? scheme.error
+                                      : scheme.onSurfaceVariant
+                                          .withValues(alpha: 0.4),
+                                ),
+                              ),
                       ),
                     ),
-                  ).paddingRight(4),
-                IconButton(
-                  icon: const Icon(Icons.cloud_upload_outlined),
-                  onPressed: () async {
-                    DataSync().uploadData();
-                  },
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        busy ? 'Syncing Data'.tl : 'Sync Data'.tl,
+                        style: TextStyle(
+                          fontSize: 13,
+                          letterSpacing: 0.4,
+                          fontWeight: FontWeight.w600,
+                          color: busy
+                              ? scheme.onSurface
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    if (!busy && DataSync().lastError != null)
+                      InkWell(
+                        onTap: () {
+                          showDialogMessage(
+                            App.rootContext,
+                            "Error".tl,
+                            DataSync().lastError!,
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: scheme.error,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Error'.tl,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: scheme.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (!busy) ...[
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 19,
+                        color: scheme.onSurfaceVariant,
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        onPressed: () async {
+                          DataSync().uploadData();
+                        },
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 19,
+                        color: scheme.onSurfaceVariant,
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        onPressed: () async {
+                          DataSync().downloadData();
+                        },
+                      ),
+                    ],
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.cloud_download_outlined),
-                  onPressed: () async {
-                    DataSync().downloadData();
-                  },
-                ),
-              ],
-            ),
+              ),
+              HairRule(),
+            ],
           ),
         ),
       );

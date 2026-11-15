@@ -257,11 +257,11 @@ const double kPillNavItemWidth = 58.0;
 //   'soft'    小圆角 —— 温和，接近原来的观感
 //   'round'   大圆角 —— 明显圆润
 
-/// 圆角风格对应的基准半径。
+/// 圆角风格对应的基准半径（不需要 BuildContext 的版本）。
 ///
-/// 各处组件都从 [kCornerRadius] 取半径，再按自己的层级缩放：
-/// 封面用 1.0 倍，章节格/按钮用 0.6 倍，胶囊底栏固定全圆不参与。
-double kCornerRadius(BuildContext context) {
+/// 供 `getTheme()` 这类静态上下文使用——它拿不到 BuildContext，
+/// 但 `appdata.settings` 随时可读。有 context 的地方请用 [kCornerRadius]。
+double kCornerRadiusFromSetting() {
   final style = appdata.settings['cornerStyle'];
   return switch (style) {
     'square' => 0.0,
@@ -269,6 +269,12 @@ double kCornerRadius(BuildContext context) {
     _ => 10.0, // soft，也是缺省
   };
 }
+
+/// 圆角风格对应的基准半径。
+///
+/// 各处组件都从 [kCornerRadius] 取半径，再按自己的层级缩放：
+/// 封面用 1.0 倍，章节格/按钮用 0.6 倍，胶囊底栏固定全圆不参与。
+double kCornerRadius(BuildContext context) => kCornerRadiusFromSetting();
 
 /// 按基准半径缩放后的圆角。
 ///
@@ -307,5 +313,39 @@ List<BoxShadow> kCoverShadows(BuildContext context) {
     ),
   ];
 }
+
+// ─────────────── 页面边距（全应用统一）───────────────
+//
+// 原来各页各写一套：首页 20、收藏页 16、设置页 ListTile 默认、
+// 章节区 26。改成统一规则后，跨页面切换时左右留白不再跳。
+//
+//   kPagePadding      页面内容的左右留白（26）
+//   kPagePaddingWide  宽屏时的留白
+//   kSectionGap       板块之间的竖直间距（28）
+//   kItemGap          列表项之间的竖直间距（6）
+
+/// 页面内容左右留白。全应用统一用它，不要再写 16 / 20 / 24。
+const double kPageInset = 26.0;
+
+/// 板块之间的间距。
+const double kSectionGap = 28.0;
+
+/// 列表项之间的间距。
+const double kItemGap = 6.0;
+
+/// 页面内容的标准 padding（左右 kPageInset）。
+const EdgeInsets kPagePadding = EdgeInsets.symmetric(horizontal: kPageInset);
+
+/// 栏目标题行的标准 padding：上 kSectionGap，下 10。
+const EdgeInsets kSectionHeadPadding =
+    EdgeInsets.fromLTRB(kPageInset, kSectionGap, kPageInset, 10);
+
+/// 页面底部滚动余量：悬浮胶囊底栏 + 一点呼吸空间。
+///
+/// 页面自己不要再用 `padding.bottom + 80` 这类魔数，
+/// 统一走这里，胶囊高度一变就全局同步。
+double kPageBottomInset(BuildContext context) =>
+    kPillNavReserved + MediaQuery.of(context).padding.bottom + 16;
+
 
 

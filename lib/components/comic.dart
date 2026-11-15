@@ -903,7 +903,7 @@ class _SliverGridComics extends StatelessWidget {
                     context,
                   ).colorScheme.secondaryContainer.toOpacity(0.72)
                 : null,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: kCorner(context, scale: 0.6),
           ),
           margin: const EdgeInsets.all(4),
           child: comic,
@@ -1068,9 +1068,9 @@ class ComicListState extends State<ComicList> {
           child: Center(
             child: Material(
               color: Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: kCorner(context, scale: 0.6),
               child: InkWell(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: kCorner(context, scale: 0.6),
                 onTap: () {
                   String value = '';
                   showDialog(
@@ -1662,7 +1662,7 @@ class SimpleComicTile extends StatelessWidget {
       width: 98,
       height: 136,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kCorner(context, scale: 0.6),
         color: Theme.of(context).colorScheme.secondaryContainer,
       ),
       clipBehavior: Clip.antiAlias,
