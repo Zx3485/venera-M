@@ -50,7 +50,9 @@ class Appdata with Init {
       _isSavingData = false;
     }
     if (sync) {
-      DataSync().uploadData();
+      // 走防抖：一次启动里 saveData 会被调用几十次，直接上传等于几十轮
+      // WebDAV 往返，还会互相打断。scheduleUpload 会把它们合并成一次。
+      DataSync().scheduleUpload();
     }
   }
 

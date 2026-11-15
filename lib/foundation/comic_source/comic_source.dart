@@ -307,7 +307,8 @@ class ComicSource {
     }
     await file.writeAsString(jsonEncode(data));
     _isSaving = false;
-    DataSync().uploadData();
+    // 批量保存（比如重载全部源）时这里会被连续调用，交给防抖合并。
+    DataSync().scheduleUpload();
   }
 
   Future<bool> reLogin() async {

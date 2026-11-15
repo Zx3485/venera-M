@@ -295,69 +295,66 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
     yield const SliverPadding(padding: EdgeInsets.only(top: 8));
 
     yield SliverLazyToBoxAdapter(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(width: 16),
-          GestureDetector(
-            onTap: () => _viewCover(context),
-            onLongPress: () => _saveCover(context),
-            child: Hero(
-              tag: "cover${widget.heroID}",
-              child: Container(
-                decoration: BoxDecoration(
-                  color: context.colorScheme.primaryContainer,
-                  borderRadius: kBRS,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.toOpacity(0.14),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(26, 8, 26, 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 直角封面：杂志版最标志性的一条——圆角换成直角 + 硬阴影，
+            // 从「App 卡片」变成「贴在纸上的一张图」。
+            GestureDetector(
+              onTap: () => _viewCover(context),
+              onLongPress: () => _saveCover(context),
+              child: Hero(
+                tag: "cover${widget.heroID}",
+                child: EditorialCover(
+                  width: 98,
+                  height: 138,
+                  child: AnimatedImage(
+                    image: CachedImageProvider(
+                      widget.cover ?? comic.cover,
+                      sourceKey: comic.sourceKey,
+                      cid: comic.id,
                     ),
-                  ],
-                ),
-                height: 144,
-                width: 144 * 0.72,
-                clipBehavior: Clip.antiAlias,
-                child: AnimatedImage(
-                  image: CachedImageProvider(
-                    widget.cover ?? comic.cover,
-                    sourceKey: comic.sourceKey,
-                    cid: comic.id,
+                    width: double.infinity,
+                    height: double.infinity,
                   ),
-                  width: double.infinity,
-                  height: double.infinity,
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SelectableText(
-                  comic.title,
-                  style: kSerifStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    height: 1.4,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Kicker(
+                    (ComicSource.find(comic.sourceKey)?.name)?.toUpperCase() ??
+                        '',
                   ),
-                ),
-                if (comic.subTitle != null)
+                  const SizedBox(height: 8),
                   SelectableText(
-                    comic.subTitle!,
-                    style: ts.s14,
-                  ).paddingVertical(4),
-                Text(
-                  (ComicSource.find(comic.sourceKey)?.name) ?? '',
-                  style: ts.s12,
-                ),
-              ],
+                    comic.title,
+                    style: kSerifStyle(
+                      fontSize: 23,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.6,
+                      height: 1.24,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                  if (comic.subTitle != null)
+                    SelectableText(
+                      comic.subTitle!,
+                      style: ts.s12.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                        letterSpacing: 0.3,
+                      ),
+                    ).paddingVertical(8),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -450,6 +447,34 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 ),
               ],
             ).paddingHorizontal(16).paddingVertical(8),
+          // 「最后一话」快捷入口。
+          // 原来想看最新一话得先展开章节、再滚到最底——
+          // 这个按钮直接在首屏给出一条通道。
+          if (comic.chapters != null && comic.chapters!.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: EditorialJumpButton(
+                      label: 'First'.tl,
+                      icon: Icons.first_page,
+                      onTap: () => read(1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: EditorialJumpButton(
+                      label:
+                          '${'Latest'.tl} · ${comic.chapters!.length}',
+                      icon: Icons.last_page,
+                      primary: true,
+                      onTap: () => read(comic.chapters!.length),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (history != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

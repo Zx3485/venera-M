@@ -40,7 +40,7 @@ class _AboutSettingsState extends State<AboutSettings> {
               "V${App.version}",
               style: const TextStyle(fontSize: 16),
             ),
-            Text("Venera-M".tl),
+            Text("Paperbound".tl),
             Text(
               "更新功能测试版 · Update test build".tl,
               style: const TextStyle(fontSize: 12),

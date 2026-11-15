@@ -351,65 +351,49 @@ class _HistoryState extends State<_History> {
 
   @override
   Widget build(BuildContext context) {
-    final dim = context.colorScheme.onSurfaceVariant;
     // 没有历史记录时整个板块隐藏，不渲染可点击的空头部
     if (history.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
+    final rows = history.take(5).toList();
     return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              onTap: () => context.to(() => const HistoryPage()),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  children: [
-                    Text(
-                      'History'.tl,
-                      style: const TextStyle(
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text('· $count',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: dim,
-                            fontWeight: FontWeight.w600)),
-                    const Spacer(),
-                    Text('View more'.tl,
-                        style: TextStyle(fontSize: 11, color: dim)),
-                  ],
-                ),
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SectionHead(
+            'Continue Reading'.tl,
+            trailing: 'View more'.tl,
+            onTap: () => context.to(() => const HistoryPage()),
+            padding: const EdgeInsets.fromLTRB(26, 28, 26, 10),
+          ),
+          // 编号目录：01 / 02 / 03 + 衬线书名 + 细分割线 + 右侧小封面。
+          // 和原来的「封面在左、标题在右」列表相比，重心从图挪到了字。
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 26),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HairRule(),
+                for (var i = 0; i < rows.length; i++) ...[
+                  _buildRow(context, rows[i], i + 1),
+                  HairRule(),
+                ],
+              ],
             ),
-            for (var h in history.take(5)) _buildRow(context, h),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildRow(BuildContext context, History h) {
-    final dim = context.colorScheme.onSurfaceVariant;
+  Widget _buildRow(BuildContext context, History h, int index) {
     final maxPage = h.maxPage ?? 0;
     final progress = maxPage > 0 ? (h.page / maxPage).clamp(0.0, 1.0) : 0.0;
-    final sub = h.ep > 1 ? "E${h.ep} · P${h.page}" : "P${h.page}";
+    final ep = h.ep > 1 ? "第 ${h.ep} 话 · " : "";
+    final sub = "$ep${(progress * 100).round()}%";
     final heroID = h.id.hashCode;
-    Widget cover = Container(
-      width: 44,
-      height: 60,
-      decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      clipBehavior: Clip.antiAlias,
+
+    Widget cover = EditorialCover(
       child: AnimatedImage(
         image: HistoryImageProvider(h),
         fit: BoxFit.cover,
@@ -417,7 +401,14 @@ class _HistoryState extends State<_History> {
         height: double.infinity,
       ),
     );
-    return InkWell(
+
+    return TOCEntry(
+      index: index.toString().padLeft(2, '0'),
+      title: h.title.replaceAll('\n', ''),
+      subtitle: sub,
+      // 最近在读的那本打一个钢红点，取代原来「整行加粗」
+      dot: index == 1,
+      cover: Hero(tag: "cover$heroID", child: cover),
       onTap: () {
         context.to(
           () => ComicPage(
@@ -429,63 +420,15 @@ class _HistoryState extends State<_History> {
           ),
         );
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        child: Row(
-          children: [
-            Hero(tag: "cover$heroID", child: cover),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    h.title.replaceAll('\n', ''),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 13.5, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(sub,
-                      style: TextStyle(fontSize: 10.5, color: dim)),
-                  const SizedBox(height: 9),
-                  // 细进度线：墨韵的阅读进度表达
-                  Container(
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.outlineVariant
-                          .withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                    child: FractionallySizedBox(
-                      widthFactor: progress,
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.onSurface,
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text('${(progress * 100).round()}%',
-                style: TextStyle(
-                    fontSize: 10,
-                    color: dim,
-                    fontFeatures: const [FontFeature.tabularFigures()])),
-          ],
-        ),
-      ),
     );
   }
 }
 
-/// 墨韵问候头：日期（朱砂点）+ 衬线大字问候
+/// 杂志式页头：报头（品牌 + 操作图标 + 粗横线）+ 日期小标 + 衬线大标题。
+///
+/// 原来是「朱砂圆点 + 日期 + 27sp 问候语」，层级全靠字号。
+/// 现在用了三层不同的排版语言：全大写宽字距的报头、列间距的小字标、
+/// 以及 37sp 的衬线大标题——这是杂志排版最核心的节奏。
 class _GreetHeader extends StatelessWidget {
   const _GreetHeader();
 
@@ -502,46 +445,34 @@ class _GreetHeader extends StatelessWidget {
                     ? 'Good afternoon'.tl
                     : 'Good evening'.tl;
     const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
     // 注意：本组件由外层 SliverToBoxAdapter(child: _GreetHeader()) 包裹，
-    // 这里必须返回 Box 组件，不能再返回 Sliver（否则运行时 RenderObject 类型不匹配崩溃）。
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: kSealColor(context),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  "${now.month}.${now.day} ${weekdays[now.weekday - 1].tl}",
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    color: context.colorScheme.onSurfaceVariant,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Text(
-              hi,
-              style: kSerifStyle(
-                fontSize: 27,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
+    // 这里必须返回 Box 组件，不能再返回 Sliver（Sliver 进 Box 上下文
+    // 会在运行时装配 RenderObject 时崩溃，analyze 查不出来）。
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 报头只放品牌字和粗横线，不放操作图标：
+        // 搜索已经是独立的可开关板块（home_section_defs 里 search 默认开），
+        // 这里再放一个会变成两个搜索入口。
+        const Masthead(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(26, 22, 26, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Kicker(
+                "${now.month} 月 ${now.day} 日 · ${weekdays[now.weekday - 1].tl}",
+                size: 10,
+                tracking: kKickerTracking,
+                weight: FontWeight.w600,
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              DisplayTitle(hi),
+            ],
+          ),
         ),
+      ],
     );
   }
 }

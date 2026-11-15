@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>venera 重设计 v3 · 杂志 × 玻璃胶囊</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#0a0a0b;color:#e8e8ea;padding-bottom:80px;
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.serif{font-family:"Noto Serif SC","Songti SC","SimSun",Georgia,serif;}
+.mono{font-family:"SF Mono","JetBrains Mono",Consolas,monospace;font-variant-numeric:tabular-nums;}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+header{padding:52px 0 18px;}
+header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+header .sub{color:#8b8b95;font-size:13.5px;line-height:1.85;margin-top:12px;max-width:790px;}
+header .sub b{color:#dcdce0;font-weight:600;}
+header .sub em{color:#e8a598;font-style:normal;}
+.bar{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;align-items:center;}
+.sw{display:flex;border:1px solid rgba(255,255,255,.14);border-radius:999px;overflow:hidden;}
+.sw button{
+  border:none;background:transparent;color:#8b8b95;padding:10px 22px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:.18s;font-family:inherit;
+}
+.sw button:hover{color:#dcdce0;}
+.sw button.on{background:#f0f0ee;color:#101013;}
+.tbtn{
+  border:1px solid rgba(255,255,255,.14);background:transparent;color:#8b8b95;
+  padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:.18s;
+}
+.tbtn:hover{border-color:rgba(255,255,255,.3);color:#dcdce0;}
+
+.dir{padding:30px 0 10px;}
+.dirhead{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;margin-bottom:8px;}
+.dirhead .tag{
+  font-size:11px;font-weight:800;letter-spacing:2px;padding:4px 9px;
+  border-radius:6px;background:#1d1d21;color:#a0a0aa;border:1px solid rgba(255,255,255,.1);
+}
+.dirhead h2{font-size:21px;font-weight:700;}
+.dirhead .en{color:#6f6f79;font-size:12px;letter-spacing:2.5px;text-transform:uppercase;}
+.dirhead p.desc{color:#9a9aa4;font-size:13.5px;line-height:1.85;max-width:900px;margin:12px 0 4px;}
+.dirhead p.desc b{color:#e2e2e6;font-weight:600;}
+
+.stage{display:flex;gap:34px;justify-content:flex-start;flex-wrap:wrap;padding:26px 0 6px;}
+
+.phone{
+  width:322px;height:664px;flex-shrink:0;border-radius:46px;padding:7px;
+  background:#191a1e;border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 26px 64px rgba(0,0,0,.62),inset 0 0 0 2px #000;
+  position:relative;
+}
+.screen{position:absolute;inset:7px;border-radius:39px;overflow:hidden;isolation:isolate;}
+.notch{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:86px;height:21px;border-radius:11px;background:#000;z-index:60;}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
+.scroll::-webkit-scrollbar{display:none;}
+.cap{text-align:center;color:#6c6c76;font-size:11.5px;margin-top:14px;letter-spacing:.3px;}
+.cap b{color:#a8a8b2;font-weight:600;}
+
+.sb{display:flex;justify-content:space-between;padding:13px 24px 4px;font-size:12px;font-weight:600;position:relative;z-index:40;letter-spacing:.2px;}
+
+/* ══════════ 混合主题：杂志的排版 + 玻璃的悬浮 ══════════ */
+.sM{
+  --bg:#fbf9f4;--tx:#17160f;--dim:#6d6a5f;--dim2:#a29d8e;
+  --rule:#ddd7c6;--rust:#a4522c;--ink:#17160f;
+  --navbg:rgba(251,249,244,.62);
+  --navborder:rgba(23,22,15,.12);
+  --navshadow:rgba(60,52,36,.18);
+  background:var(--bg);color:var(--tx);
+}
+.sM.dark{
+  --bg:#131210;--tx:#efeadd;--dim:#8e8a7d;--dim2:#5c594f;
+  --rule:#2d2a23;--rust:#d9805a;--ink:#efeadd;
+  --navbg:rgba(19,18,16,.58);
+  --navborder:rgba(239,234,221,.13);
+  --navshadow:rgba(0,0,0,.55);
+}
+
+.b-mast{padding:16px 26px 0;}
+.b-mast .top{display:flex;justify-content:space-between;align-items:center;padding-bottom:9px;}
+.b-mast .logo{font-size:11px;letter-spacing:5px;text-transform:uppercase;font-weight:700;color:var(--tx);}
+.b-mast .ico{display:flex;gap:14px;color:var(--dim);}
+.b-mast .ico svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.b-rule{height:1px;background:var(--rule);}
+.b-rule.thick{height:2.5px;background:var(--tx);}
+
+.b-head{padding:22px 26px 0;}
+.b-head .date{font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:var(--dim);font-weight:600;}
+.b-head h1{font-size:37px;font-weight:700;line-height:1.1;letter-spacing:-1px;margin-top:14px;}
+.b-head .dek{font-size:12.5px;line-height:1.9;color:var(--dim);margin-top:12px;}
+.b-head .dek i{color:var(--rust);font-style:normal;font-weight:600;}
+
+.b-sect{margin-top:30px;}
+.b-sh{display:flex;align-items:baseline;justify-content:space-between;padding:0 26px 12px;}
+.b-sh h3{font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;color:var(--tx);}
+.b-sh em{font-size:10.5px;color:var(--dim2);letter-spacing:1px;}
+
+.b-toc{padding:0 26px;}
+.b-ti{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--rule);align-items:flex-start;}
+.b-ti:first-child{border-top:1px solid var(--rule);}
+.b-ti .num{font-size:15px;font-weight:700;color:var(--dim2);min-width:26px;letter-spacing:-.5px;padding-top:1px;}
+.b-ti .body{flex:1;min-width:0;}
+.b-ti .t{font-size:15.5px;font-weight:700;line-height:1.35;letter-spacing:-.2px;}
+.b-ti .m{font-size:11px;color:var(--dim);margin-top:5px;letter-spacing:.2px;}
+.b-ti .cv{width:34px;height:48px;border-radius:2px;flex-shrink:0;}
+.b-ti .dot{width:5px;height:5px;border-radius:50%;background:var(--rust);display:inline-block;margin-right:5px;vertical-align:middle;}
+
+.b-feat{display:grid;grid-template-columns:1fr 1fr;gap:20px 14px;padding:14px 26px 0;}
+.b-fi .cv{width:100%;aspect-ratio:5/7;border-radius:2px;}
+.b-fi .k{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--rust);font-weight:700;margin-top:11px;}
+.b-fi .t{font-size:14px;font-weight:700;line-height:1.35;margin-top:5px;letter-spacing:-.2px;}
+.b-fi .m{font-size:10.5px;color:var(--dim);margin-top:4px;}
+
+/* 封面渐变 */
+.cv{border-radius:2px;overflow:hidden;position:relative;background:#222;}
+.cv::after{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.055) 0 1px,transparent 1px 5px);
+  mix-blend-mode:overlay;
+}
+.c1{background:linear-gradient(150deg,#3d4a6b,#1b2233 60%,#12161f);}
+.c2{background:linear-gradient(155deg,#6b3d3d,#33201b 60%,#1f1412);}
+.c3{background:linear-gradient(160deg,#2f5e56,#182f2b 60%,#101f1c);}
+.c4{background:linear-gradient(145deg,#5f4a72,#2e2338 60%,#1b1522);}
+.c5{background:linear-gradient(150deg,#75603a,#3a2f1c 60%,#211b11);}
+.c6{background:linear-gradient(155deg,#3a5b78,#1e2f3d 60%,#121c26);}
+.c7{background:linear-gradient(160deg,#7a4258,#3c1f2b 60%,#22121a);}
+.c8{background:linear-gradient(150deg,#4a6b45,#22331f 60%,#141f13);}
+
+/* ──────── 玻璃胶囊底栏（A 的形态 + B 的文字标签）──────── */
+.pill-nav{
+  position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+  z-index:55;display:flex;gap:2px;padding:6px 8px;border-radius:999px;
+  background:var(--navbg);
+  backdrop-filter:blur(24px) saturate(1.7);
+  -webkit-backdrop-filter:blur(24px) saturate(1.7);
+  border:1px solid var(--navborder);
+  box-shadow:0 10px 30px var(--navshadow), inset 0 1px 0 rgba(255,255,255,.16);
+  white-space:nowrap;
+}
+.sM.dark .pill-nav{box-shadow:0 12px 34px var(--navshadow), inset 0 1px 0 rgba(255,255,255,.06);}
+.pn{
+  width:57px;height:44px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;
+  border-radius:999px;color:var(--dim2);position:relative;
+  transition:.18s;
+}
+.pn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.pn span{font-size:8px;letter-spacing:.9px;font-weight:700;text-transform:uppercase;}
+.pn.on{color:var(--tx);background:rgba(164,82,44,.1);}
+.sM.dark .pn.on{background:rgba(217,128,90,.13);}
+.pn.on::after{
+  content:"";position:absolute;bottom:5px;left:50%;transform:translateX(-50%);
+  width:16px;height:1.5px;background:var(--rust);border-radius:1px;
+}
+.pn b{
+  position:absolute;top:6px;right:9px;
+  background:var(--rust);color:#fff;font-size:7px;font-weight:800;
+  min-width:12px;height:12px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  padding:0 3px;font-variant-numeric:tabular-nums;
+}
+
+/* B 详情（沿用） */
+.b-dwrap{padding:16px 26px 0;}
+.b-dtop{display:flex;gap:16px;align-items:flex-start;}
+.b-dtop .cv{width:98px;height:138px;flex-shrink:0;box-shadow:5px 5px 0 rgba(0,0,0,.09);}
+.sM.dark .b-dtop .cv{box-shadow:5px 5px 0 rgba(0,0,0,.35);}
+.b-dtop .info{flex:1;padding-top:2px;min-width:0;}
+.b-dtop .src{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--rust);font-weight:700;}
+.b-dtop h2{font-size:23px;font-weight:700;line-height:1.24;letter-spacing:-.6px;margin-top:8px;}
+.b-dtop .au{font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.3px;}
+.b-tags{font-size:11px;line-height:1.85;color:var(--dim);margin-top:12px;}
+.b-tags u{color:var(--tx);text-decoration:none;border-bottom:1px solid var(--rule);padding-bottom:1px;}
+.b-dpara{font-size:12.5px;line-height:2;color:var(--dim);margin-top:16px;}
+
+.b-dcta{margin-top:18px;display:flex;gap:10px;}
+.b-btn{
+  flex:1;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;
+  font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  border:1px solid var(--tx);
+}
+.b-btn.solid{background:var(--ink);color:var(--bg);}
+.b-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;}
+
+.b-idx{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;padding:6px 26px 0;}
+.b-ix{display:flex;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:11.5px;}
+.b-ix .n{font-size:10.5px;color:var(--dim2);min-width:19px;font-weight:600;letter-spacing:-.3px;}
+.b-ix .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.b-ix.read .t{color:var(--dim2);}
+.b-ix.read .n{color:var(--rust);}
+
+/* 阅读器 */
+.rd-top{
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  border-bottom:1px solid var(--rule);
+}
+.rd-top .bk{width:20px;height:20px;flex-shrink:0;color:var(--dim);}
+.rd-top .ti{flex:1;min-width:0;}
+.rd-top .ti .a{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rd-top .ti .b{font-size:9.5px;color:var(--dim2);margin-top:2px;letter-spacing:.4px;}
+.rd-page{
+  margin:0;height:auto;position:relative;
+  background:linear-gradient(160deg,#28303d,#161b23 55%,#0e1116);
+}
+.rd-page.dk{background:linear-gradient(160deg,#2a2f38,#171a20 55%,#0d0f13);}
+.rd-inner{height:352px;display:flex;align-items:center;justify-content:center;position:relative;}
+.rd-inner .grain{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(118deg,rgba(255,255,255,.05) 0 1px,transparent 1px 6px);
+}
+.rd-inner .ph{color:rgba(255,255,255,.22);font-size:11px;letter-spacing:3px;text-transform:uppercase;position:relative;}
+.rd-bot{padding:0 20px;}
+.rd-slider{display:flex;align-items:center;gap:12px;padding:14px 0 10px;}
+.rd-slider .p{font-size:10px;color:var(--dim2);font-variant-numeric:tabular-nums;}
+.rd-track{flex:1;height:2px;background:var(--rule);position:relative;border-radius:2px;}
+.rd-track i{position:absolute;left:0;top:0;bottom:0;background:var(--rust);border-radius:2px;}
+.rd-track em{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  width:9px;height:9px;border-radius:50%;background:var(--rust);
+  box-shadow:0 0 0 3px var(--bg);
+}
+.rd-tools{display:flex;justify-content:space-between;padding:2px 0 12px;}
+.rd-tools .ic{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--dim);font-size:8px;letter-spacing:.6px;}
+.rd-tools .ic svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+
+.notes{
+  margin-top:26px;padding:20px 24px;border-radius:14px;
+  background:#111114;border:1px solid rgba(255,255,255,.075);
+  max-width:1090px;
+}
+.notes h4{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#6f6f79;margin-bottom:14px;font-weight:700;}
+.notes ul{list-style:none;display:grid;gap:11px;}
+.notes li{font-size:12.5px;line-height:1.85;color:#a4a4ae;padding-left:20px;position:relative;}
+.notes li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:#a4522c;}
+.notes li b{color:#e2e2e6;font-weight:600;}
+.notes li code{background:#1c1c21;padding:2px 6px;border-radius:4px;font-size:11px;color:#d8a598;font-family:"SF Mono",Consolas,monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>venera 重设计 v3 · 杂志 × 玻璃胶囊</h1>
+  <p class="sub">
+    按主人说的组合：<b>B 杂志的排版骨架</b>（报头、编号目录、衬线标题、直角封面、全大写小字标）
+    ＋ <b>A 的椭圆玻璃悬浮底栏</b>。<br><br>
+    底栏是重点：它<b>不贴边、不占位</b>，是浮在内容之上的一枚胶囊。内容可以从它后面穿过去并被磨砂模糊。
+    选中态我改成了<em>「锈红底 + 下方一道短横线」</em>——底下的短横线呼应 B 的杂志排版语言，而不是 A 那种圆点。
+  </p>
+  <div class="bar">
+    <div class="sw">
+      <button id="thLight" class="on">纸色</button>
+      <button id="thDark">墨色</button>
+    </div>
+    <button class="tbtn" id="glowBtn">显示底栏安全区</button>
+  </div>
+</header>
+
+<section class="dir">
+  <div class="dirhead">
+    <span class="tag">AB</span>
+    <h2>杂志 × 玻璃</h2>
+    <span class="en">Editorial + Glass Pill</span>
+  </div>
+  <p class="desc">
+    <b>骨架来自 B，底栏来自 A。</b>看这几屏时注意两件事：① 底栏是浮着的，往下滚内容会从它后面过；
+    ② 每屏底部都留了胶囊的高度，保证最后一项不会被遮住——这就是真机上 <code>padding.bottom += 58</code> 那种余量。
+  </p>
+  <div class="stage">
+
+    <!-- 首页 · 纸色 -->
+    <div>
+      <div class="phone"><div class="screen sM">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="b-mast">
+            <div class="top">
+              <div class="logo">Venera</div>
+              <div class="ico">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+              </div>
+            </div>
+            <div class="b-rule thick"></div>
+          </div>
+
+          <div class="b-head">
+            <div class="date">11 月 15 日 · 星期六</div>
+            <h1 class="serif">晚上好。</h1>
+            <div class="dek">你有 <i>3 部</i> 更新待读，上次停在《星海航线》第 42 话。</div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>继续阅读</h3><em>4 部</em></div>
+            <div class="b-toc">
+              <div class="b-ti">
+                <div class="num mono">01</div>
+                <div class="body">
+                  <div class="t serif"><span class="dot"></span>星海航线</div>
+                  <div class="m">第 42 话 · 碎星带 · 64%</div>
+                </div>
+                <div class="cv c6"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">02</div>
+                <div class="body">
+                  <div class="t serif">灰烬之约</div>
+                  <div class="m">第 18 话 · 燃烧的桥 · 31%</div>
+                </div>
+                <div class="cv c2"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">03</div>
+                <div class="body">
+                  <div class="t serif">深夜文库</div>
+                  <div class="m">第 7 话 · 便利店 · 82%</div>
+                </div>
+                <div class="cv c3"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">04</div>
+                <div class="body">
+                  <div class="t serif">琉璃工房</div>
+                  <div class="m">第 25 话 · 窑变 · 12%</div>
+                </div>
+                <div class="cv c7"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>本期推荐</h3><em>更多</em></div>
+            <div class="b-feat">
+              <div class="b-fi">
+                <div class="cv c1"></div>
+                <div class="k">连载 · 214 话</div>
+                <div class="t serif">月下交易</div>
+                <div class="m">★ 4.8 · 都市奇幻</div>
+              </div>
+              <div class="b-fi">
+                <div class="cv c4"></div>
+                <div class="k">完结 · 96 话</div>
+                <div class="t serif">铁与羽</div>
+                <div class="m">★ 4.6 · 蒸汽朋克</div>
+              </div>
+            </div>
+          </div>
+          <div style="height:86px;"></div>
+        </div>
+        <div class="pill-nav">
+          <div class="pn on">
+            <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+            <span>首页</span>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>收藏</span><b>3</b>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
+            <span>探索</span>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+            <span>分类</span>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>首页</b> · 报头 + 编号目录 + 玻璃胶囊</div>
+    </div>
+
+    <!-- 详情 · 纸色 -->
+    <div>
+      <div class="phone"><div class="screen sM">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="b-mast">
+            <div class="top">
+              <div class="logo">Venera</div>
+              <div class="ico">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+              </div>
+            </div>
+            <div class="b-rule thick"></div>
+          </div>
+
+          <div class="b-dwrap">
+            <div class="b-dtop">
+              <div class="cv c6"></div>
+              <div class="info">
+                <div class="src">Kura · 连载中</div>
+                <h2 class="serif">星海航线</h2>
+                <div class="au">苍蓝工作室 · 214 话 · 2024</div>
+              </div>
+            </div>
+
+            <div class="b-tags">标签 —— <u>科幻</u> <u>太空歌剧</u> <u>冒险</u> <u>剧情</u> <u>全彩</u></div>
+
+            <div class="b-dpara">
+              在被遗忘的第十三星区，货运船「渡鸦号」载着最后一批移民出发。
+              年轻的领航员并不知道，航线图上那条被标为安全通道的曲率走廊，
+              三百年前曾经吞噬掉整支舰队。
+            </div>
+
+            <div class="b-dcta">
+              <div class="b-btn solid">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                第 42 话
+              </div>
+              <div class="b-btn">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="b-sect" style="margin-top:26px;">
+            <div class="b-sh"><h3>章目录</h3><em>214 话 · 倒序</em></div>
+            <div class="b-idx">
+              <div class="b-ix"><span class="n mono">214</span><span class="t">终点</span></div>
+              <div class="b-ix"><span class="n mono">213</span><span class="t">渡鸦</span></div>
+              <div class="b-ix"><span class="n mono">212</span><span class="t">曲率走廊</span></div>
+              <div class="b-ix"><span class="n mono">211</span><span class="t">回声</span></div>
+              <div class="b-ix read"><span class="n mono">210</span><span class="t">无人区</span></div>
+              <div class="b-ix read"><span class="n mono">209</span><span class="t">旧地图</span></div>
+            </div>
+          </div>
+          <div style="height:86px;"></div>
+        </div>
+        <div class="pill-nav">
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+            <span>首页</span>
+          </div>
+          <div class="pn on">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>收藏</span><b>3</b>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
+            <span>探索</span>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+            <span>分类</span>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>详情</b> · 直角封面 + 双栏章目录</div>
+    </div>
+
+    <!-- 首页 · 墨色 -->
+    <div>
+      <div class="phone"><div class="screen sM dark">
+        <div class="notch"></div>
+        <div class="scroll">
+          <div class="sb" style="color:var(--dim);"><span>21:24</span><span>5G ▮▮▮ 87%</span></div>
+          <div class="b-mast">
+            <div class="top">
+              <div class="logo">Venera</div>
+              <div class="ico">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+              </div>
+            </div>
+            <div class="b-rule thick"></div>
+          </div>
+
+          <div class="b-head">
+            <div class="date">11 月 15 日 · 星期六</div>
+            <h1 class="serif">晚上好。</h1>
+            <div class="dek">你有 <i>3 部</i> 更新待读，上次停在《星海航线》第 42 话。</div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>继续阅读</h3><em>4 部</em></div>
+            <div class="b-toc">
+              <div class="b-ti">
+                <div class="num mono">01</div>
+                <div class="body">
+                  <div class="t serif"><span class="dot"></span>星海航线</div>
+                  <div class="m">第 42 话 · 碎星带 · 64%</div>
+                </div>
+                <div class="cv c6"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">02</div>
+                <div class="body">
+                  <div class="t serif">灰烬之约</div>
+                  <div class="m">第 18 话 · 燃烧的桥 · 31%</div>
+                </div>
+                <div class="cv c2"></div>
+              </div>
+              <div class="b-ti">
+                <div class="num mono">03</div>
+                <div class="body">
+                  <div class="t serif">深夜文库</div>
+                  <div class="m">第 7 话 · 便利店 · 82%</div>
+                </div>
+                <div class="cv c3"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="b-sect">
+            <div class="b-sh"><h3>本期推荐</h3><em>更多</em></div>
+            <div class="b-feat">
+              <div class="b-fi">
+                <div class="cv c1"></div>
+                <div class="k">连载 · 214 话</div>
+                <div class="t serif">月下交易</div>
+                <div class="m">★ 4.8 · 都市奇幻</div>
+              </div>
+              <div class="b-fi">
+                <div class="cv c4"></div>
+                <div class="k">完结 · 96 话</div>
+                <div class="t serif">铁与羽</div>
+                <div class="m">★ 4.6 · 蒸汽朋克</div>
+              </div>
+            </div>
+          </div>
+          <div style="height:86px;"></div>
+        </div>
+        <div class="pill-nav">
+          <div class="pn on">
+            <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+            <span>首页</span>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>收藏</span><b>3</b>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
+            <span>探索</span>
+          </div>
+          <div class="pn">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+            <span>分类</span>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>首页 · 墨色</b> · 同一套排版</div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h4>这套组合具体怎么落地</h4>
+    <ul>
+      <li><b>底栏改造是「换皮」不是重写。</b>现有 <code>_NaviMainViewState.build</code> 里那段 <code>Stack</code> + <code>Positioned.fill</code> + <code>padding.bottom += 58</code> 已经是悬浮结构了，只需要：把 <code>Container</code> 换成带 <code>borderRadius: 999</code> 的胶囊、左右留 12–16 边距、去掉顶边 hairline 换成四周描边、加阴影。</li>
+      <li><b>选中态从「圆点」改成「短横线」</b>——这条线是 B 的语言（B 的顶栏选中态也是短横线），比 A 的圆点更协调。</li>
+      <li><b>底栏要带文字标签了。</b>现在是 <b>纯图标</b>（<code>_SingleBottomNaviWidget</code> 里只有 <code>Icon</code>，没有 <code>Text</code>）。改成图标+8px 小字，高度 44。这是这次唯一动到交互语义的地方。</li>
+      <li><b>安全区余量</b>：现在是 <code>+58</code>，胶囊版需要改成 胶囊高 56 + 底部间距 18 = <b>约 74</b>。同时 <code>floatingBottomBarInset(context)</code> 也要跟着改，否则 FAB 会被压住一半。</li>
+      <li><b>玻璃开关必须保留。</b>关掉磨砂时要退回「实色胶囊 + 描边」，不能变成透明看不见。</li>
+    </ul>
+  </div>
+
+  <div class="notes">
+    <h4>我发现的三个真实风险</h4>
+    <ul>
+      <li><b>侧栏有 3 种形态、2 个断点。</b><code>600</code> 和 <code>1300</code> 会切换折叠侧栏 / 全侧栏 / 底栏，宽屏下底栏根本不存在。胶囊版只需要管「底栏」那一档，但别把侧栏的 <code>72/224</code> 高度逻辑带坏。</li>
+      <li><b><code>_SingleBottomNaviWidget</code> 里那个 <code>width: 32 + value*32</code> 动画</b>是为「只有图标」设计的。加了文字之后这个宽度会撑爆 57px 的格子，必须一起改。</li>
+      <li><b>B 方向依赖衬线字体</b>，而 <code>pubspec.yaml</code> 里 <code>fonts:</code> 到现在还是注释状态。不打包 Noto Serif SC 的话，这套排版在没装该字体的机器上会静默退化成无衬线，杂志感直接没了一半。这是需要主人拍板的：<b>要不要为此增加 2–5MB 包体积</b>。</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var body = document.body;
+
+  function setTheme(dark){
+    document.querySelectorAll('.sM').forEach(function(el){
+      // 第三台手机是常驻墨色示例，不参与切换
+      var isSample = el.closest('.stage > div:last-child');
+      if (isSample) return;
+      el.classList.toggle('dark', dark);
+    });
+    document.getElementById('thLight').classList.toggle('on', !dark);
+    document.getElementById('thDark').classList.toggle('on', dark);
+  }
+
+  document.getElementById('thLight').addEventListener('click', function(){ setTheme(false); });
+  document.getElementById('thDark').addEventListener('click', function(){ setTheme(true); });
+
+  var glow = false;
+  document.getElementById('glowBtn').addEventListener('click', function(){
+    glow = !glow;
+    document.querySelectorAll('.scroll').forEach(function(s){
+      s.style.paddingBottom = glow ? '90px' : '';
+      s.style.outline = glow ? '2px dashed rgba(164,82,44,.5)' : '';
+      s.style.outlineOffset = glow ? '-3px' : '';
+    });
+    this.textContent = glow ? '隐藏底栏安全区' : '显示底栏安全区';
+  });
+})();
+</script>
+</body>
+</html>

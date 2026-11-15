@@ -92,7 +92,17 @@ class NaviPaneState extends State<NaviPane>
     _naviItemTapListeners.remove(listener);
   }
 
-  static const _kBottomBarHeight = 58.0;
+  /// 底栏占位高度。
+  ///
+  /// 玻璃模式下底栏是浮起来的胶囊（高度 + 底部间距），非玻璃模式是贴边实色条。
+  /// 内容区的滚动余量按这个值补，页面绝对定位元素（FAB 等）也按它避让。
+  static const _kBottomBarHeight = kPillNavHeight;
+
+  /// 悬浮底栏占用的总高度（胶囊本身 + 离底部的间距）。
+  ///
+  /// 内容会延伸到底栏后面，所以滚动余量必须补这个值，
+  /// 否则最后一项会被胶囊压住一半。
+  static const double _kBottomBarReserved = kPillNavReserved;
 
   /// 悬浮底栏高度。玻璃模式下内容会延伸到底栏后面，
   /// 页面上绝对定位的元素（FAB、侧栏底部按钮等）应据此避让。
@@ -104,7 +114,7 @@ class NaviPaneState extends State<NaviPane>
     if (context.width >= changePoint) {
       return 0;
     }
-    return _kBottomBarHeight;
+    return _kBottomBarReserved;
   }
 
   static const _kFoldedSideBarWidth = 72.0;
@@ -309,52 +319,84 @@ class NaviPaneState extends State<NaviPane>
 
   Widget buildBottom() {
     final glass = isGlassEnabled;
-    final bar = Container(
-      height: _kBottomBarHeight,
-      decoration: BoxDecoration(
-        color: glass
-            ? Theme.of(context).colorScheme.surface.toOpacity(0.5)
-            : null,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context)
-                .colorScheme
-                .outlineVariant
-                .withValues(alpha: glass ? 0.35 : 1),
-            width: glass ? kBorderHairline : 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: List<Widget>.generate(widget.paneItems.length, (index) {
-          return Expanded(
-            child: _SingleBottomNaviWidget(
-              enabled: currentPage == index,
-              entry: widget.paneItems[index],
-              onTap: () {
-                updatePage(index);
-              },
-              key: ValueKey(index),
-            ),
-          );
-        }),
-      ),
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = context.isDarkMode;
+
+    // 条目行：图标 + 8px 标签。选中态是「钢红底 + 下方短横线」，
+    // 和杂志排版的栏目选中标记同源。
+    final items = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List<Widget>.generate(widget.paneItems.length, (index) {
+        return _SingleBottomNaviWidget(
+          enabled: currentPage == index,
+          entry: widget.paneItems[index],
+          onTap: () {
+            updatePage(index);
+          },
+          key: ValueKey(index),
+        );
+      }),
     );
-    if (glass) {
-      // 墨韵 + 玻璃：底栏悬浮在内容上，磨砂
-      return BlurEffect(
-        child: Material(
-          textStyle: Theme.of(context).textTheme.labelSmall,
-          elevation: 0,
-          color: Colors.transparent,
-          child: bar,
+
+    if (!glass) {
+      // 关磨砂：退回实色贴边条，保留左侧短横线的选中态。
+      // 不能让它变透明——那样文字会叠在内容上。
+      return Material(
+        textStyle: Theme.of(context).textTheme.labelSmall,
+        elevation: 0,
+        color: scheme.surface,
+        child: Container(
+          height: kPillNavHeight,
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: scheme.outlineVariant,
+                width: kRuleHair,
+              ),
+            ),
+          ),
+          child: items,
         ),
       );
     }
-    return Material(
-      textStyle: Theme.of(context).textTheme.labelSmall,
-      elevation: 0,
-      child: bar,
+
+    // 玻璃：浮起来的胶囊。左右各留 24 边距，底部避开手势区。
+    final pill = Container(
+      height: kPillNavHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: scheme.surface.toOpacity(0.62),
+        borderRadius: kBRPill,
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: isDark ? 0.22 : 0.5),
+          width: kBorderHairline,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.toOpacity(isDark ? 0.5 : 0.16),
+            blurRadius: 26,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: items,
+    );
+
+    return BlurEffect(
+      child: Material(
+        textStyle: Theme.of(context).textTheme.labelSmall,
+        elevation: 0,
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            kPillNavMarginH,
+            0,
+            kPillNavMarginH,
+            kPillNavMarginBottom,
+          ),
+          child: pill,
+        ),
+      ),
     );
   }
 
@@ -555,30 +597,95 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
   }
 
   Widget buildContent() {
+    // 选中进度 0→1，用于图标缩放和短横线的淡入。
+    // 注意：原来这里有一个 32 + value*32 的「胶囊展开」动画，那是按
+    // 「纯图标」设计的宽度。现在格子固定 58 宽还要放 8px 文字，
+    // 再展开就会撑爆，所以改成缩放 + 指示线淡入。
     final value = controller.value;
-    final colorScheme = Theme.of(context).colorScheme;
-    final icon = Icon(
-      widget.enabled ? widget.entry.activeIcon : widget.entry.icon,
-    );
-    return Center(
-      child: Container(
-        width: 64,
-        height: 28,
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.all(Radius.circular(32)),
-          color: isHovering ? colorScheme.surfaceContainer : Colors.transparent,
-        ),
-        child: Center(
-          child: Container(
-            width: 32 + value * 32,
-            height: 28,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.all(Radius.circular(32)),
-              color: value != 0
-                  ? colorScheme.secondaryContainer
-                  : Colors.transparent,
-            ),
-            child: Center(child: icon),
+    final scheme = Theme.of(context).colorScheme;
+    final rust = kRustColor(context);
+    final selected = value > 0.01;
+
+    final color = widget.enabled
+        ? (isHovering ? scheme.onSurface : (scheme.brightness == Brightness.dark
+            ? Colors.white
+            : scheme.onSurface))
+        : scheme.onSurfaceVariant.withValues(alpha: 0.7);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (details) => setState(() => isHovering = true),
+      onExit: (details) => setState(() => isHovering = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: kPillNavItemWidth,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // hover 时的柔和底
+              if (isHovering)
+                Container(
+                  width: kPillNavItemWidth - 4,
+                  height: kPillNavHeight - 8,
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHigh.toOpacity(0.5),
+                    borderRadius: BorderRadius.circular(kRadiusM),
+                  ),
+                ),
+              // 选中底：淡钢红填充
+              if (selected)
+                Container(
+                  width: kPillNavItemWidth - 4,
+                  height: kPillNavHeight - 8,
+                  decoration: BoxDecoration(
+                    color: rust.toOpacity(0.10 * value),
+                    borderRadius: BorderRadius.circular(kRadiusM),
+                  ),
+                ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: 1 + 0.06 * value,
+                    child: Icon(
+                      widget.enabled
+                          ? widget.entry.activeIcon
+                          : widget.entry.icon,
+                      size: 19,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    widget.entry.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      height: 1.1,
+                      letterSpacing: 0.8,
+                      fontWeight:
+                          widget.enabled ? FontWeight.w700 : FontWeight.w500,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+              // 选中指示线：贴着底边的一道短横线（杂志栏目标注语言）
+              Positioned(
+                bottom: 5,
+                child: Container(
+                  width: 16 * value,
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    color: rust,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -735,8 +842,9 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ],
       );
     }
-    // 墨韵 + 玻璃：底栏悬浮，内容从栏下穿过，模糊才会真正透出来。
-    // 给内容补充「底栏高度」的滚动余量，避免最后一项被栏遮住。
+    // 墨韵 + 玻璃：底栏悬浮成胶囊，内容从栏下穿过，模糊才会真正透出来。
+    // 滚动余量要补「胶囊高度 + 离底部间距」，只补高度的话
+    // 最后一项会被胶囊压住一截。
     return Column(
       children: [
         state.buildTop().paddingTop(context.padding.top),
@@ -756,7 +864,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
                         data: innerMq.copyWith(
                           padding: innerMq.padding.copyWith(
                             bottom: innerMq.padding.bottom +
-                                NaviPaneState._kBottomBarHeight,
+                                NaviPaneState._kBottomBarReserved,
                           ),
                         ),
                         child: content,

@@ -196,3 +196,54 @@ TextStyle kSerifStyle({
 /// 朱砂色：唯一的暖色信号（更新点、评分星、阅读位置）
 Color kSealColor(BuildContext context) =>
     context.isDarkMode ? const Color(0xFFD05A52) : const Color(0xFFB5443C);
+
+// ─────────────── 杂志排版（Editorial）───────────────
+//
+// 设计语言：层级靠「字号跨度 + 粗细横线 + 等宽编号」表达，
+// 不靠卡片、不靠阴影。封面一律直角（杂志贴纸感）。
+// 钢红只做信号色，和朱砂同源但更暖，用于「当期」标记。
+
+/// 钢红：杂志版的强调色（当期推荐、已读编号）
+Color kRustColor(BuildContext context) =>
+    context.isDarkMode ? const Color(0xFFD9805A) : const Color(0xFFA4522C);
+
+/// 报头粗横线的粗细。整页只有这一处用这么粗的线。
+const double kRuleThick = 2.5;
+
+/// 报头细横线 / 目录分隔线的粗细。
+const double kRuleHair = 1.0;
+
+/// 报头字母间距（全大写小字标那种松散排布）
+const double kMastheadTracking = 5.0;
+
+/// 小字标（kicker / eyebrow）字号：全大写 + 宽字距，像杂志栏目名。
+const double kKickerSize = 10.0;
+
+/// 小字标字距
+const double kKickerTracking = 2.6;
+
+/// 编号列字号（继续阅读前面的 01 02 03）
+const double kIndexNumSize = 15.0;
+
+/// 杂志大标题字号（首页「晚上好。」那种）
+const double kDisplaySize = 37.0;
+
+// ─────────────── 玻璃胶囊底栏 ───────────────
+
+/// 胶囊底栏本身的高度（不含外边距）。比原来的 58 矮，因为要浮起来。
+const double kPillNavHeight = 56.0;
+
+/// 胶囊底栏左右外边距
+const double kPillNavMarginH = 24.0;
+
+/// 胶囊底栏离屏幕底部的距离（不含系统手势区）
+const double kPillNavMarginBottom = 14.0;
+
+/// 玻璃胶囊底栏的总占位高度 = 高度 + 底部间距。
+/// 内容区滚动余量、FAB 避让都按这个值算，改一处即可全局同步。
+const double kPillNavReserved =
+    kPillNavHeight + kPillNavMarginBottom; // 70
+
+/// 胶囊底栏里单个条目的宽度（图标 + 文字）
+const double kPillNavItemWidth = 58.0;
+

@@ -1,0 +1,433 @@
+part of 'components.dart';
+
+// ════════════════════════════════════════════════════════════
+//  杂志排版组件（Editorial）
+//
+//  设计语言：层级靠「字号跨度 + 粗细横线 + 等宽编号」表达，
+//  不靠卡片、不靠阴影。所有页面共用这几个零件，避免各写一套。
+// ════════════════════════════════════════════════════════════
+
+/// 小字标（kicker / eyebrow）：全大写、宽字距，像杂志栏目名。
+///
+/// 例：`CONTINUE READING`、`11 月 15 日 · 星期六`
+class Kicker extends StatelessWidget {
+  const Kicker(
+    this.text, {
+    super.key,
+    this.color,
+    this.size = kKickerSize,
+    this.tracking = kKickerTracking,
+    this.weight = FontWeight.w600,
+  });
+
+  final String text;
+  final Color? color;
+  final double size;
+  final double tracking;
+  final FontWeight weight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: size,
+        letterSpacing: tracking,
+        fontWeight: weight,
+        color: color ?? context.colorScheme.onSurfaceVariant,
+        height: 1.2,
+      ),
+    );
+  }
+}
+
+/// 报头：品牌字 + 右侧操作图标 + 下方一条粗横线。
+///
+/// 这是整套排版最标志性的一块——页面上只有这里用这么粗的线。
+class Masthead extends StatelessWidget {
+  const Masthead({
+    super.key,
+    this.title = 'Paperbound',
+    this.actions = const [],
+    this.padding = const EdgeInsets.fromLTRB(26, 14, 26, 0),
+  });
+
+  final String title;
+  final List<Widget> actions;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 34,
+            child: Row(
+              children: [
+                Text(
+                  title.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: kMastheadTracking,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                    height: 1.2,
+                  ),
+                ),
+                const Spacer(),
+                ...actions,
+              ],
+            ),
+          ),
+          Container(
+            height: kRuleThick,
+            color: scheme.onSurface,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 栏目标题行：左侧中文小标，右侧「· N」或操作文字。
+///
+/// 比原来的「16.5sp 粗体 + 箭头图标」克制得多——
+/// 用字距和小字号拉开层级，而不是靠加粗。
+class SectionHead extends StatelessWidget {
+  const SectionHead(
+    this.title, {
+    super.key,
+    this.trailing,
+    this.onTap,
+    this.padding = const EdgeInsets.fromLTRB(26, 26, 26, 12),
+  });
+
+  final String title;
+  final String? trailing;
+  final VoidCallback? onTap;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Padding(
+      padding: padding,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              letterSpacing: 2.4,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
+            ),
+          ),
+          const Spacer(),
+          if (trailing != null)
+            GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Text(
+                trailing!,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  letterSpacing: 0.8,
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 细分割线（目录用）。
+class HairRule extends StatelessWidget {
+  const HairRule({super.key, this.indent = 0, this.color});
+
+  final double indent;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: kRuleHair,
+      margin: EdgeInsets.only(left: indent),
+      color: color ?? context.colorScheme.outlineVariant,
+    );
+  }
+}
+
+/// 等宽编号（01 / 02 / 03）。
+///
+/// 用 tabularFigures 保证数字宽度一致，不会左右跳。
+class IndexNum extends StatelessWidget {
+  const IndexNum(this.value, {super.key, this.color, this.size = kIndexNumSize});
+
+  final String value;
+  final Color? color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      value,
+      style: TextStyle(
+        fontSize: size,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.5,
+        height: 1.1,
+        color: color ?? context.colorScheme.onSurfaceVariant,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+  }
+}
+
+/// 直角封面容器。
+///
+/// 杂志版和原来最大的差别之一：圆角 10 → 直角。
+/// 加上一层很轻的硬阴影，像「贴在纸上的一张图」。
+class EditorialCover extends StatelessWidget {
+  const EditorialCover({
+    super.key,
+    required this.child,
+    this.width,
+    this.height,
+    this.aspectRatio,
+    this.shadow = true,
+  });
+
+  final Widget child;
+  final double? width;
+  final double? height;
+  final double? aspectRatio;
+  final bool shadow;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget box = Container(
+      width: width,
+      height: height,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHighest,
+        boxShadow: shadow
+            ? [
+                BoxShadow(
+                  color: Colors.black.toOpacity(
+                    context.isDarkMode ? 0.34 : 0.16,
+                  ),
+                  offset: const Offset(4, 4),
+                  blurRadius: 0,
+                ),
+              ]
+            : null,
+      ),
+      child: child,
+    );
+    if (aspectRatio != null) {
+      box = AspectRatio(aspectRatio: aspectRatio!, child: box);
+    }
+    return box;
+  }
+}
+
+/// 杂志大标题（首页「晚上好。」那一行）。
+///
+/// 用衬线体，字号和字重的跨度都很大——这是整套设计最贵的部分，
+/// 也是打包 Noto Serif SC 的意义所在。
+class DisplayTitle extends StatelessWidget {
+  const DisplayTitle(
+    this.text, {
+    super.key,
+    this.size = kDisplaySize,
+    this.color,
+  });
+
+  final String text;
+  final double size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: kSerifStyle(
+        fontSize: size,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -1.0,
+        height: 1.12,
+        color: color ?? context.colorScheme.onSurface,
+      ),
+    );
+  }
+}
+
+/// 目录行：编号 + 衬线标题 + 副行 + 右侧小封面。
+///
+/// 替代原来「44×60 小封面 + 一行标题 + 一条细进度线」的列表行。
+class TOCEntry extends StatelessWidget {
+  const TOCEntry({
+    super.key,
+    required this.index,
+    required this.title,
+    required this.subtitle,
+    required this.cover,
+    this.dot = false,
+    this.onTap,
+    this.padding = const EdgeInsets.symmetric(vertical: 13),
+  });
+
+  final String index;
+  final String title;
+  final String subtitle;
+  final Widget cover;
+
+  /// 是否在标题前打一个钢红圆点（表示有新更新）
+  final bool dot;
+  final VoidCallback? onTap;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: padding,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: IndexNum(index),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (dot) ...[
+                        Container(
+                          width: 5,
+                          height: 5,
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: kRustColor(context),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: kSerifStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                            height: 1.35,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 0.2,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(width: 34, height: 48, child: cover),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 「最后一话 / 继续阅读」这类并排快捷键。
+class EditorialJumpButton extends StatelessWidget {
+  const EditorialJumpButton({
+    super.key,
+    required this.label,
+    this.onTap,
+    this.primary = false,
+    this.icon,
+    this.flex = 1,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool primary;
+  final IconData? icon;
+  final int flex;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final fg = primary ? scheme.surface : scheme.onSurface;
+    final bg = primary ? scheme.onSurface : Colors.transparent;
+    return Expanded(
+      flex: flex,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(
+              color: primary ? scheme.onSurface : scheme.outlineVariant,
+              width: kRuleHair,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: fg),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    color: fg,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
