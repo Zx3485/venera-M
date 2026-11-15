@@ -114,10 +114,10 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kCorner(context, scale: 0.45),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: kCorner(context, scale: 0.45),
         onSecondaryTapDown: onSecondaryTap,
         onLongPress: onLongPress,
         onTap: () {
@@ -169,12 +169,12 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
       onLongPress: () {
         goPhotoView(image);
       },
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: kCorner(context, scale: 0.45),
       child: Container(
         width: 98,
         height: 128,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           color: isSelected
               ? Theme.of(context).colorScheme.primaryContainer
               : null,
@@ -185,7 +185,7 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
             Container(
               height: 128,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: kCorner(context, scale: 0.45),
                 color: Theme.of(context).colorScheme.secondaryContainer,
               ),
               clipBehavior: Clip.antiAlias,
@@ -231,7 +231,7 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: kCorner(context, scale: 0.45),
           ),
           child: Text(
               "${imageFavorites.length}/${widget.imageFavoritesComic.maxPageFromEp}",

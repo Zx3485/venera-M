@@ -228,14 +228,8 @@ class ComicTile extends StatelessWidget {
         height: double.infinity,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.secondaryContainer,
-          borderRadius: kBRS,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.toOpacity(0.14),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: kCorner(context),
+          boxShadow: kCoverShadows(context),
         ),
         clipBehavior: Clip.antiAlias,
         child: buildImage(context),
@@ -290,14 +284,8 @@ class ComicTile extends StatelessWidget {
         Widget image = Container(
           decoration: BoxDecoration(
             color: context.colorScheme.secondaryContainer,
-            borderRadius: kBRS,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.toOpacity(0.14),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: kCorner(context),
+            boxShadow: kCoverShadows(context),
           ),
           clipBehavior: Clip.antiAlias,
           child: buildImage(context),
@@ -311,7 +299,7 @@ class ComicTile extends StatelessWidget {
         }
 
         return InkWell(
-          borderRadius: kBRS,
+          borderRadius: kCorner(context),
           onTap: _onTap,
           onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
           onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
@@ -391,9 +379,12 @@ class ComicTile extends StatelessWidget {
                   comic.title.replaceAll('\n', ''),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    height: 1.25,
+                  style: kSerifStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                    height: 1.3,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -554,9 +545,12 @@ class _ComicDescription extends StatelessWidget {
       children: <Widget>[
         Text(
           title.trim(),
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14.0,
+          style: kSerifStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+            letterSpacing: -0.1,
+            height: 1.35,
+            color: context.colorScheme.onSurface,
           ),
           maxLines: maxLines,
           overflow: TextOverflow.ellipsis,
@@ -603,7 +597,7 @@ class _ComicDescription extends StatelessWidget {
                           color: s == "Unavailable"
                               ? context.colorScheme.errorContainer
                               : context.colorScheme.secondaryContainer,
-                          borderRadius: kBRXs,
+                          borderRadius: kCorner(context, scale: 0.4),
                         ),
                         child: Center(
                           widthFactor: 1,
@@ -1662,7 +1656,8 @@ class SimpleComicTile extends StatelessWidget {
       width: 98,
       height: 136,
       decoration: BoxDecoration(
-        borderRadius: kCorner(context, scale: 0.6),
+        borderRadius: kCorner(context),
+        boxShadow: kCoverShadows(context),
         color: Theme.of(context).colorScheme.secondaryContainer,
       ),
       clipBehavior: Clip.antiAlias,
@@ -1677,7 +1672,7 @@ class SimpleComicTile extends StatelessWidget {
     }
 
     child = AnimatedTapRegion(
-      borderRadius: 8,
+      borderRadius: kCornerRadius(context),
       onTap: onTap ??
           () {
             context.to(

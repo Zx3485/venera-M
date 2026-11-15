@@ -188,14 +188,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // ── 组件级主题：让 M3 默认组件与自绘组件共享同一套视觉语言 ──
       dialogTheme: DialogThemeData(
         backgroundColor: scheme.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: kBRL),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kCornerRadiusFromSetting()),
+        ),
         barrierColor: Colors.black.withValues(alpha: 0.5),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: scheme.surfaceContainerHigh,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: kBRM,
+          borderRadius: BorderRadius.circular(kCornerRadiusFromSetting()),
           side: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: 0.5),
           ),
@@ -211,7 +213,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: kBRM,
+              borderRadius: BorderRadius.circular(kCornerRadiusFromSetting()),
               side: BorderSide(
                 color: scheme.outlineVariant.withValues(alpha: 0.5),
               ),
@@ -222,11 +224,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       cardTheme: CardThemeData(
         elevation: 0,
         color: scheme.surfaceContainerLow,
-        shape: RoundedRectangleBorder(borderRadius: kBRM),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kCornerRadiusFromSetting()),
+        ),
         surfaceTintColor: Colors.transparent,
       ),
       chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(borderRadius: kBRXs),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kCornerRadiusFromSetting() * 0.4),
+        ),
         side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       sliderTheme: const SliderThemeData(

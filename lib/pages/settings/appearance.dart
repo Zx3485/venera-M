@@ -261,12 +261,13 @@ class _HomeSectionsEditorState extends State<_HomeSectionsEditor> {
       ),
     );
 
-    return ListTile(
+    return EditorialRow(
       key: Key(key),
-      title: Text((kHomeSectionNames[key] ?? key).tl),
+      title: (kHomeSectionNames[key] ?? key).tl,
+      dense: true,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [removeButton, const Icon(Icons.drag_handle)],
+        children: [removeButton, const Icon(Icons.drag_handle, size: 20)],
       ),
     );
   }
@@ -476,18 +477,19 @@ class _ShelvesEditorState extends State<_ShelvesEditor> {
   }
 
   Widget buildItem(String folder) {
-    return ListTile(
+    return EditorialRow(
       key: Key(folder),
-      title: Text(folder),
-      subtitle: Text(
-        "@c comics".tlParams({'c': LocalFavoritesManager().folderComics(folder)}),
-        style: ts.s12,
-      ),
+      title: folder,
+      subtitle: "@c comics".tlParams({
+        'c': LocalFavoritesManager().folderComics(folder),
+      }),
+      dense: true,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             tooltip: "Remove".tl,
+            iconSize: 18,
             onPressed: () {
               setState(() {
                 shelves.remove(folder);
@@ -496,7 +498,7 @@ class _ShelvesEditorState extends State<_ShelvesEditor> {
             },
             icon: const Icon(Icons.delete_outline),
           ),
-          const Icon(Icons.drag_handle),
+          const Icon(Icons.drag_handle, size: 20),
         ],
       ),
     );

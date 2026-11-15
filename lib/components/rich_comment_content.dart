@@ -293,7 +293,7 @@ class _RichCommentContentState extends State<RichCommentContent> {
             children: images.map((e) {
               Widget image = Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
                 ),
                 width: 100,

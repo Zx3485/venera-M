@@ -481,7 +481,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: kCorner(context),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -587,7 +587,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
         color = context.colorScheme.surfaceContainerLow;
       }
 
-      final borderRadius = BorderRadius.circular(12);
+      final borderRadius = kCorner(context, scale: 0.6);
 
       const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 6);
 
@@ -844,7 +844,7 @@ class _ActionButton extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: kCorner(context, scale: 0.8),
         border: Border.all(
           color: context.colorScheme.outlineVariant,
           width: 0.6,
@@ -857,7 +857,7 @@ class _ActionButton extends StatelessWidget {
           }
         },
         onLongPress: onLongPressed,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: kCorner(context, scale: 0.8),
         child: IconTheme.merge(
           data: IconThemeData(size: 20, color: iconColor),
           child: Row(
@@ -1080,7 +1080,7 @@ class _ComicPageLoadingPlaceHolder extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: context.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           boxShadow: [
             BoxShadow(
               color: context.colorScheme.outlineVariant,

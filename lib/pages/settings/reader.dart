@@ -102,18 +102,20 @@ class _ReaderSettingsState extends State<ReaderSettings> {
         if (comicId != null && sourceKey != null)
           SliverMainAxisGroup(
             slivers: [
-              SwitchListTile(
-                title: Text("Enable comic specific settings".tl),
-                value: isEnabledSpecificSettings,
-                onChanged: (b) {
-                  setState(() {
-                    appdata.settings.setEnabledComicSpecificSettings(
-                      comicId,
-                      sourceKey,
-                      b,
-                    );
-                  });
-                },
+              EditorialRow(
+                title: "Enable comic specific settings".tl,
+                trailing: Switch(
+                  value: isEnabledSpecificSettings,
+                  onChanged: (b) {
+                    setState(() {
+                      appdata.settings.setEnabledComicSpecificSettings(
+                        comicId,
+                        sourceKey,
+                        b,
+                      );
+                    });
+                  },
+                ),
               ).toSliver(),
               if (isEnabledSpecificSettings)
                 Center(
@@ -128,21 +130,22 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                     ),
                   ),
                 ).toSliver(),
-              Divider().toSliver(),
             ],
           ),
         if (comicId == null)
           SliverMainAxisGroup(
             slivers: [
-              SwitchListTile(
-                title: Text("Enable device specific settings".tl),
-                value: useDeviceSpecificSettings,
-                onChanged: (b) {
-                  setState(() {
-                    appdata.settings.setEnabledDeviceSpecificSettings(b);
-                  });
-                  appdata.saveData();
-                },
+              EditorialRow(
+                title: "Enable device specific settings".tl,
+                trailing: Switch(
+                  value: useDeviceSpecificSettings,
+                  onChanged: (b) {
+                    setState(() {
+                      appdata.settings.setEnabledDeviceSpecificSettings(b);
+                    });
+                    appdata.saveData();
+                  },
+                ),
               ).toSliver(),
               if (useDeviceSpecificSettings)
                 Center(
@@ -158,7 +161,6 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                     ),
                   ),
                 ).toSliver(),
-              Divider().toSliver(),
             ],
           ),
         _SwitchSetting(
@@ -499,7 +501,7 @@ class __CustomImageProcessingState extends State<_CustomImageProcessing> {
             child: Container(
               margin: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: kCorner(context, scale: 0.3),
                 border: Border.all(color: context.colorScheme.outlineVariant),
               ),
               child: SizedBox.expand(

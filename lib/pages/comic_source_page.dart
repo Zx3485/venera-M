@@ -410,7 +410,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                 color: Theme.of(context).colorScheme.outlineVariant,
                 width: 0.6,
               ),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: kCorner(context, scale: 0.45),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -820,7 +820,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                   ),
                   decoration: BoxDecoration(
                     color: context.colorScheme.surfaceContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: kCorner(context, scale: 0.45),
                   ),
                   child: Text(
                     source.version,
@@ -837,7 +837,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: kCorner(context, scale: 0.45),
                       ),
                       child: Text(
                         "New Version".tl,

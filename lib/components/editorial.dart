@@ -102,12 +102,17 @@ class SectionHead extends StatelessWidget {
     this.title, {
     super.key,
     this.trailing,
+    this.trailingWidget,
     this.onTap,
     this.padding = const EdgeInsets.fromLTRB(26, 26, 26, 12),
   });
 
   final String title;
   final String? trailing;
+
+  /// 右侧自定义控件（替代 [trailing] 文字，用于图标按钮）。
+  final Widget? trailingWidget;
+
   final VoidCallback? onTap;
   final EdgeInsets padding;
 
@@ -130,7 +135,9 @@ class SectionHead extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          if (trailing != null)
+          if (trailingWidget != null)
+            trailingWidget!
+          else if (trailing != null)
             GestureDetector(
               onTap: onTap,
               behavior: HitTestBehavior.opaque,
@@ -424,6 +431,341 @@ class EditorialJumpButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  杂志化列表行（替代 ListTile）
+//
+//  Material 的 ListTile 自带 16px 内缩、56px 行高、圆角水波纹，
+//  在杂志版面里显得「一块一块」。这里换成：
+//    左对齐到页边、上下只有 hairline 一条线、右侧控件贴边、
+//    标题用衬线、副标题用小字标。
+// ════════════════════════════════════════════════════════════
+
+/// 设置项行：标题 + 可选副标题 + 右侧控件。
+///
+/// 对应原来的 `ListTile(title:, subtitle:, trailing:)`。
+/// 与 ListTile 的差别：无圆角、无内缩卡片感，靠 hairline 分隔。
+class EditorialRow extends StatelessWidget {
+  const EditorialRow({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+    this.leading,
+    this.dense = false,
+    this.serif = true,
+    this.showRule = true,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final Widget? leading;
+  final VoidCallback? onTap;
+
+  /// 紧凑行（42px），用于侧栏、抽屉这类高密度列表。
+  final bool dense;
+
+  /// 标题是否用衬线体。正文型设置项保持衬线，纯控件标签用无衬线更清楚。
+  final bool serif;
+
+  /// 是否画底部 hairline。
+  final bool showRule;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final titleStyle = serif
+        ? kSerifStyle(
+            fontSize: dense ? 14.5 : 15.5,
+            fontWeight: FontWeight.w600,
+            height: 1.3,
+            color: scheme.onSurface,
+          )
+        : TextStyle(
+            fontSize: dense ? 14 : 15,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+            color: scheme.onSurface,
+          );
+    Widget row = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: kPageInset,
+        vertical: dense ? 9 : 12,
+      ),
+      child: Row(
+        children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: 14),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: titleStyle),
+                if (subtitle != null && subtitle!.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      letterSpacing: 0.1,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 12),
+            trailing!,
+          ],
+        ],
+      ),
+    );
+    if (showRule) {
+      row = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          row,
+          Padding(
+            padding: const EdgeInsets.only(left: kPageInset),
+            child: HairRule(),
+          ),
+        ],
+      );
+    }
+    if (onTap == null) {
+      return row;
+    }
+    return InkWell(onTap: onTap, child: row);
+  }
+}
+
+/// 侧栏 / 抽屉里的条目：左侧一条钢红竖线标记选中。
+///
+/// 替代收藏页、设置页左侧那种「底色块 + 圆角 + 左侧 2px 线」的写法。
+class EditorialNavItem extends StatelessWidget {
+  const EditorialNavItem({
+    super.key,
+    required this.label,
+    required this.selected,
+    this.onTap,
+    this.count,
+    this.icon,
+    this.trailing,
+    this.indent = 0,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  /// 右侧计数（收藏夹条目数）。
+  final int? count;
+
+  final IconData? icon;
+  final Widget? trailing;
+  final double indent;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: selected ? kRustColor(context) : Colors.transparent,
+              width: kRuleThick,
+            ),
+          ),
+        ),
+        padding: EdgeInsets.only(
+          left: kPageInset + indent - kRuleThick,
+          right: 14,
+        ),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            if (count != null)
+              Text(
+                count.toString(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurfaceVariant,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            if (trailing != null) trailing!,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 评论区的动作小片：方角细描边 + 图标 + 数字。
+///
+/// 替代原来 `BorderRadius.circular(16)` 的圆药丸，
+/// 与杂志的直角语言一致。
+class EditorialActionChip extends StatelessWidget {
+  const EditorialActionChip({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.active = false,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final border = active ? kRustColor(context) : scheme.outlineVariant;
+    final radius = kCorner(context, scale: 0.5);
+    final content = Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: border, width: kRuleHair),
+      ),
+      child: Center(widthFactor: 1, child: child),
+    );
+    if (onTap == null) {
+      return content;
+    }
+    return InkWell(
+      onTap: onTap,
+      borderRadius: radius,
+      child: content,
+    );
+  }
+}
+
+/// 评论输入条：上下各一条 hairline 夹住，无圆角药丸。
+class EditorialInputBar extends StatelessWidget {
+  const EditorialInputBar({
+    super.key,
+    required this.controller,
+    required this.hint,
+    required this.onSend,
+    this.sending = false,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final VoidCallback onSend;
+  final bool sending;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          top: BorderSide(color: scheme.outlineVariant, width: kRuleHair),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        left: kPageInset,
+        right: 6,
+        top: 6,
+        bottom: 6 + MediaQuery.of(context).padding.bottom,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              style: TextStyle(fontSize: 14.5, color: scheme.onSurface),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                isCollapsed: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                hintText: hint,
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              minLines: 1,
+              maxLines: 5,
+            ),
+          ),
+          if (sending)
+            const Padding(
+              padding: EdgeInsets.all(10),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              onPressed: onSend,
+              icon: Icon(Icons.send, size: 19, color: kRustColor(context)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 评论区头像：方角（杂志版不用圆形头像）。
+class EditorialAvatar extends StatelessWidget {
+  const EditorialAvatar({super.key, this.child, this.size = 34});
+
+  final Widget? child;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: context.colorScheme.secondaryContainer,
+        borderRadius: kCorner(context, scale: 0.5),
+      ),
+      child: child,
     );
   }
 }

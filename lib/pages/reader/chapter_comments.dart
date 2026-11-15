@@ -203,82 +203,39 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
     if (widget.source.sendChapterCommentFunc == null) {
       return const SizedBox(height: 0);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: context.colorScheme.outlineVariant,
-            width: 0.6,
-          ),
-        ),
-      ),
-      child: Material(
-        color: context.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(24),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  isCollapsed: true,
-                  hintText: "Comment".tl,
-                ),
-                minLines: 1,
-                maxLines: 5,
-              ),
-            ),
-            if (sending)
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else
-              IconButton(
-                onPressed: () async {
-                  if (controller.text.isEmpty) {
-                    return;
-                  }
-                  setState(() {
-                    sending = true;
-                  });
-                  var b = await widget.source.sendChapterCommentFunc!(
-                    widget.comicId,
-                    widget.epId,
-                    controller.text,
-                    widget.replyComment?.id,
-                  );
-                  if (!b.error) {
-                    controller.text = "";
-                    setState(() {
-                      sending = false;
-                      _loading = true;
-                      _comments?.clear();
-                      _page = 1;
-                      maxPage = null;
-                    });
-                  } else {
-                    context.showMessage(message: b.errorMessage ?? "Error");
-                    setState(() {
-                      sending = false;
-                    });
-                  }
-                },
-                icon: Icon(
-                  Icons.send,
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-          ],
-        ).paddingLeft(16).paddingRight(4),
-      ),
+    return EditorialInputBar(
+      controller: controller,
+      hint: "Comment".tl,
+      sending: sending,
+      onSend: () async {
+        if (controller.text.isEmpty) {
+          return;
+        }
+        setState(() {
+          sending = true;
+        });
+        var b = await widget.source.sendChapterCommentFunc!(
+          widget.comicId,
+          widget.epId,
+          controller.text,
+          widget.replyComment?.id,
+        );
+        if (!b.error) {
+          controller.text = "";
+          setState(() {
+            sending = false;
+            _loading = true;
+            _comments?.clear();
+            _page = 1;
+            maxPage = null;
+          });
+        } else {
+          context.showMessage(message: b.errorMessage ?? "Error");
+          setState(() {
+            sending = false;
+          });
+        }
+      },
     );
   }
 }
@@ -316,19 +273,16 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: const EdgeInsets.symmetric(
+        vertical: 10,
+        horizontal: kPageInset,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (widget.showAvatar)
-            Container(
-              width: 36,
-              height: 36,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: Theme.of(context).colorScheme.secondaryContainer,
-              ),
+            EditorialAvatar(
+              size: 34,
               child: widget.comment.avatar == null
                   ? null
                   : AnimatedImage(
@@ -337,15 +291,28 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
                         sourceKey: widget.source.key,
                       ),
                     ),
-            ).paddingRight(8),
+            ).paddingRight(10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.comment.userName, style: ts.bold),
+                Text(
+                  widget.comment.userName,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.onSurface,
+                  ),
+                ),
                 if (widget.comment.time != null)
-                  Text(widget.comment.time!, style: ts.s12),
-                const SizedBox(height: 4),
+                  Text(
+                    widget.comment.time!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                const SizedBox(height: 6),
                 _CommentContent(text: widget.comment.content),
                 buildActions(),
               ],
@@ -383,20 +350,13 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
   }
 
   Widget buildReply() {
-    return Container(
-      margin: const EdgeInsets.only(left: 8),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: EditorialActionChip(
         onTap: () {
           // Get the parent page's widget to access comicTitle and chapterTitle
-          var parentState = context.findAncestorStateOfType<_ChapterCommentsPageState>();
+          var parentState = context
+              .findAncestorStateOfType<_ChapterCommentsPageState>();
           showSideBar(
             context,
             ChapterCommentsPage(
@@ -413,11 +373,21 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.insert_comment_outlined, size: 16),
-            const SizedBox(width: 8),
-            Text(widget.comment.replyCount.toString()),
+            Icon(
+              Icons.insert_comment_outlined,
+              size: 14,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              widget.comment.replyCount.toString(),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
-        ).padding(const EdgeInsets.symmetric(horizontal: 12, vertical: 4)),
+        ),
       ),
     );
   }
@@ -427,17 +397,10 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
   var likes = 0;
 
   Widget buildLike() {
-    return Container(
-      margin: const EdgeInsets.only(left: 8),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: EditorialActionChip(
+        active: isLiked,
         onTap: () async {
           if (isLiking) return;
           setState(() {
@@ -464,22 +427,32 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
           children: [
             if (isLiking)
               const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(),
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
               )
             else if (isLiked)
               Icon(
                 Icons.favorite,
-                size: 16,
+                size: 14,
                 color: context.useTextColor(kSoftRed),
               )
             else
-              const Icon(Icons.favorite_border, size: 16),
-            const SizedBox(width: 8),
-            Text(likes.toString()),
+              Icon(
+                Icons.favorite_border,
+                size: 14,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            const SizedBox(width: 6),
+            Text(
+              likes.toString(),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
-        ).padding(const EdgeInsets.symmetric(horizontal: 12, vertical: 4)),
+        ),
       ),
     );
   }
@@ -536,36 +509,37 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
       downColor = context.useTextColor(kSoftBlue);
     }
 
-    return Container(
-      margin: const EdgeInsets.only(left: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: EditorialActionChip(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Button.icon(
+              isLoading: isVotingUp,
+              icon: const Icon(Icons.arrow_upward),
+              size: 16,
+              color: upColor,
+              onPressed: () => vote(true),
+            ),
+            const SizedBox(width: 2),
+            Text(
+              widget.comment.score.toString(),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Button.icon(
+              isLoading: isVotingDown,
+              icon: const Icon(Icons.arrow_downward),
+              size: 16,
+              color: downColor,
+              onPressed: () => vote(false),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Button.icon(
-            isLoading: isVotingUp,
-            icon: const Icon(Icons.arrow_upward),
-            size: 18,
-            color: upColor,
-            onPressed: () => vote(true),
-          ),
-          const SizedBox(width: 4),
-          Text(widget.comment.score.toString()),
-          const SizedBox(width: 4),
-          Button.icon(
-            isLoading: isVotingDown,
-            icon: const Icon(Icons.arrow_downward),
-            size: 18,
-            color: downColor,
-            onPressed: () => vote(false),
-          ),
-        ],
       ),
     );
   }
@@ -692,34 +666,49 @@ class _EmbeddedChapterCommentsPageState
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: context.colorScheme.outlineVariant,
-            width: 0.6,
+            color: context.colorScheme.onSurface,
+            width: kRuleThick,
           ),
         ),
       ),
       child: Row(
         children: [
           IconButton(
+            iconSize: 20,
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.of(context).pop();
             },
             tooltip: "Exit".tl,
           ),
-          const SizedBox(width: 4),
-          Icon(Icons.comment, size: 24),
-          const SizedBox(width: 12),
+          const SizedBox(width: 2),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("Chapter Comments".tl, style: ts.s18),
-                Text(widget.chapterTitle, style: ts.s12),
+                Text(
+                  "Chapter Comments".tl.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 2.4,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  widget.chapterTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
@@ -794,84 +783,41 @@ class _EmbeddedChapterCommentsPageState
     if (widget.source.sendChapterCommentFunc == null) {
       return const SizedBox(height: 0);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: context.colorScheme.outlineVariant,
-            width: 0.6,
-          ),
-        ),
-      ),
-      child: Material(
-        color: context.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(24),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: textController,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  isCollapsed: true,
-                  hintText: "Comment".tl,
-                ),
-                minLines: 1,
-                maxLines: 5,
-              ),
-            ),
-            if (sending)
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else
-              IconButton(
-                onPressed: () async {
-                  if (textController.text.isEmpty) {
-                    return;
-                  }
-                  setState(() {
-                    sending = true;
-                  });
-                  var b = await widget.source.sendChapterCommentFunc!(
-                    widget.comicId,
-                    widget.epId,
-                    textController.text,
-                    null,
-                  );
-                  if (!b.error) {
-                    textController.text = "";
-                    setState(() {
-                      sending = false;
-                      _loading = true;
-                      _comments?.clear();
-                      _page = 1;
-                      maxPage = null;
-                    });
-                  } else {
-                    if (mounted) {
-                      context.showMessage(message: b.errorMessage ?? "Error");
-                    }
-                    setState(() {
-                      sending = false;
-                    });
-                  }
-                },
-                icon: Icon(
-                  Icons.send,
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-          ],
-        ).paddingLeft(16).paddingRight(4),
-      ),
+    return EditorialInputBar(
+      controller: textController,
+      hint: "Comment".tl,
+      sending: sending,
+      onSend: () async {
+        if (textController.text.isEmpty) {
+          return;
+        }
+        setState(() {
+          sending = true;
+        });
+        var b = await widget.source.sendChapterCommentFunc!(
+          widget.comicId,
+          widget.epId,
+          textController.text,
+          null,
+        );
+        if (!b.error) {
+          textController.text = "";
+          setState(() {
+            sending = false;
+            _loading = true;
+            _comments?.clear();
+            _page = 1;
+            maxPage = null;
+          });
+        } else {
+          if (mounted) {
+            context.showMessage(message: b.errorMessage ?? "Error");
+          }
+          setState(() {
+            sending = false;
+          });
+        }
+      },
     );
   }
 }

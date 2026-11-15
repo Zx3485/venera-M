@@ -104,10 +104,12 @@ class _AppbarState extends State<Appbar> {
           ),
           Expanded(
             child: DefaultTextStyle(
-              style: DefaultTextStyle.of(context).style.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.3,
+              // 杂志报头：衬线标题，字号收敛，靠字重与衬线拉层级
+              style: kSerifStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+                color: context.colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -120,6 +122,18 @@ class _AppbarState extends State<Appbar> {
           )
         ],
       ).paddingTop(context.padding.top),
+    );
+    // 底部 hairline：杂志页眉与正文之间的那条细线
+    content = Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: context.colorScheme.outlineVariant,
+            width: kRuleHair,
+          ),
+        ),
+      ),
+      child: content,
     );
     if (widget.style == AppbarStyle.shadow) {
       return Material(
@@ -229,11 +243,13 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         Expanded(
           child: DefaultTextStyle(
-            style: DefaultTextStyle.of(context).style.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.3,
-              ),
+            // 杂志报头：衬线标题
+            style: kSerifStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: context.colorScheme.onSurface,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             child: title,
@@ -246,6 +262,19 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
       ],
     ).paddingTop(topPadding);
 
+    // 底部 hairline（杂志页眉收口）
+    Widget bodyWithRule = Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: context.colorScheme.outlineVariant,
+            width: kRuleHair,
+          ),
+        ),
+      ),
+      child: body,
+    );
+
     if (style == AppbarStyle.blur) {
       if (!glassInAppBar) {
         // 磨砂关闭：实色 SliverAppbar，不建 BackdropFilter
@@ -254,7 +283,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             color: context.colorScheme.surface,
             elevation: 0,
             borderRadius: BorderRadius.circular(radius),
-            child: body,
+            child: bodyWithRule,
           ),
         );
       }
@@ -267,7 +296,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             ),
             elevation: 0,
             borderRadius: BorderRadius.circular(radius),
-            child: body,
+            child: bodyWithRule,
           ),
         ),
       );
@@ -277,7 +306,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
           color: context.colorScheme.surface,
           elevation: shrinkOffset == 0 ? 0 : 2,
           borderRadius: BorderRadius.circular(radius),
-          child: body,
+          child: bodyWithRule,
         ),
       );
     }
@@ -331,7 +360,7 @@ class _AppTabBarState extends State<AppTabBar> {
 
   static const tabPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 6);
 
-  static const tabRadius = 8.0;
+  static const tabRadius = 0.0;
 
   _IndicatorPainter? painter;
 
@@ -976,7 +1005,7 @@ class TabActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: kCorner(context, scale: 0.45),
       child: Container(
         height: _kTabHeight,
         padding: const EdgeInsets.symmetric(horizontal: 12),

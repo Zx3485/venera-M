@@ -23,7 +23,7 @@ class _AboutSettingsState extends State<AboutSettings> {
               width: 112,
               height: 112,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(136),
+                borderRadius: kCorner(context),
               ),
               clipBehavior: Clip.antiAlias,
               child: const Image(
@@ -36,20 +36,31 @@ class _AboutSettingsState extends State<AboutSettings> {
         Column(
           children: [
             const SizedBox(height: 8),
+            // 应用名用衬线大字，版本号用小字标——杂志版权页的做法
             Text(
-              "V${App.version}",
-              style: const TextStyle(fontSize: 16),
+              "Paperbound",
+              style: kSerifStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.6,
+                color: context.colorScheme.onSurface,
+              ),
             ),
-            Text("Paperbound".tl),
+            const SizedBox(height: 6),
+            Kicker("V${App.version}"),
+            const SizedBox(height: 4),
             Text(
               "更新功能测试版 · Update test build".tl,
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
           ],
         ).toSliver(),
-        ListTile(
-          title: Text("Check for updates".tl),
+        EditorialRow(
+          title: "Check for updates".tl,
           trailing: Button.filled(
             isLoading: isCheckingUpdate,
             child: Text("Check".tl),

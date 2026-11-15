@@ -124,17 +124,26 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
           },
           child: Column(
             children: [
-              RadioListTile<String>(
-                title: Text("Direct".tl),
-                value: 'direct',
+              EditorialRow(
+                title: "Direct".tl,
+                onTap: () => RadioGroup.maybeOf<String>(context)
+                    ?.onChanged
+                    .call('direct'),
+                trailing: const Radio<String>(value: 'direct'),
               ),
-              RadioListTile<String>(
-                title: Text("System".tl),
-                value: 'system',
+              EditorialRow(
+                title: "System".tl,
+                onTap: () => RadioGroup.maybeOf<String>(context)
+                    ?.onChanged
+                    .call('system'),
+                trailing: const Radio<String>(value: 'system'),
               ),
-              RadioListTile(
-                title: Text("Manual".tl),
-                value: 'manual',
+              EditorialRow(
+                title: "Manual".tl,
+                onTap: () => RadioGroup.maybeOf<String>(context)
+                    ?.onChanged
+                    .call('manual'),
+                trailing: const Radio<String>(value: 'manual'),
               ),
               if (type == 'manual') buildManualProxy(),
             ],

@@ -551,7 +551,7 @@ class _LocalState extends State<_Local> {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           onTap: () {
             context.to(() => const LocalComicsPage());
           },
@@ -863,7 +863,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           onTap: () {
             context.to(() => const ComicSourcePage());
           },
@@ -883,7 +883,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: kCorner(context, scale: 0.45),
                       ),
                       child:
                           Text(comicSources.length.toString(), style: ts.s12),
@@ -906,7 +906,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                         decoration: BoxDecoration(
                           color:
                               Theme.of(context).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: kCorner(context, scale: 0.45),
                         ),
                         child: Text(e),
                       );
@@ -924,7 +924,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
             color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
             width: kBorderHairline,
           ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: kCorner(context, scale: 0.6),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1060,7 +1060,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: kCorner(context, scale: 0.45),
           onTap: () {
             context.to(
               () => const ImageFavoritesPage()
@@ -1084,7 +1084,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
                         decoration: BoxDecoration(
                           color:
                               Theme.of(context).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: kCorner(context, scale: 0.45),
                         ),
                         child: Text(
                           imageFavoritesCompute!.count.toString(),
@@ -1255,7 +1255,7 @@ class __ChartLineState extends State<_ChartLine>
     return Row(
       children: [
         InkWell(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: kCorner(context, scale: 0.3),
           onTap: () {
             widget.onTap?.call(widget.text);
           },
@@ -1280,7 +1280,7 @@ class __ChartLineState extends State<_ChartLine>
                   width: width * _controller.value,
                   height: 18,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: kCorner(context, scale: 0.25),
                     gradient: LinearGradient(
                       // 主题色渐变：亮色端向白/黑插值，保证深浅主题都有层次
                       colors: [
