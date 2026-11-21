@@ -238,8 +238,9 @@ class DataSync with ChangeNotifier {
           await client.remove(old.name!);
         }
         if (files.length >= 10) {
-          files.sort((a, b) => a.name!.compareTo(b.name!));
-          await client.remove(files.first.name!);
+          // 同样要用数值比较，否则可能删掉版本号更高的那份。
+          files.sort((a, b) => _compareDataFileNames(b.name!, a.name!));
+          await client.remove(files.last.name!);
         }
         await client.write(filename, await data.readAsBytes());
         data.deleteIgnoreError();
@@ -296,8 +297,13 @@ class DataSync with ChangeNotifier {
 
       try {
         var files = await client.readDir('/');
-        files.sort((a, b) => b.name!.compareTo(a.name!));
-        var file = files.firstWhereOrNull((e) => e.name!.endsWith('.venera'));
+        // 只把 .venera 当候选，再按「天数 → 版本号」的**数值**排序。
+        // 以前是对整个文件名做字符串降序：同一天里 20431-9 会排在
+        // 20431-10 前面（'9' > '1'），于是版本 10 之后永远下载到旧快照，
+        // 表现就是「这边改了那边一直看不到」。
+        files = files.where((e) => e.name!.endsWith('.venera')).toList();
+        files.sort((a, b) => _compareDataFileNames(b.name!, a.name!));
+        var file = files.firstOrNull;
         if (file == null) {
           throw 'No data file found';
         }
@@ -342,6 +348,43 @@ class DataSync with ChangeNotifier {
         scheduleUpload();
       }
     }
+  }
+
+  /// 按「天数 → 版本号」的数值比较两个 `.venera` 文件名。
+  ///
+  /// 文件名是 `<天数>-<版本号>.venera`。字符串比较在版本号进入两位数后
+  /// 会出错（`20431-9` 排到 `20431-10` 之后），导致下载到旧快照。
+  /// 解析不出来的退化成字符串比较，不会抛异常。
+  static int _compareDataFileNames(String a, String b) {
+    var pa = _parseDataFileName(a);
+    var pb = _parseDataFileName(b);
+    if (pa != null && pb != null) {
+      var day = pa.$1.compareTo(pb.$1);
+      if (day != 0) {
+        return day;
+      }
+      var ver = pa.$2.compareTo(pb.$2);
+      if (ver != 0) {
+        return ver;
+      }
+    }
+    return a.compareTo(b);
+  }
+
+  static (int, int)? _parseDataFileName(String? name) {
+    if (name == null) {
+      return null;
+    }
+    var parts = name.split('-');
+    if (parts.length < 2) {
+      return null;
+    }
+    var day = int.tryParse(parts[0]);
+    var version = int.tryParse(parts[1].split('.').first);
+    if (day == null || version == null) {
+      return null;
+    }
+    return (day, version);
   }
 
   /// 从云端文件名里取最大的版本号。

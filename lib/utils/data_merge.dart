@@ -321,6 +321,9 @@ void _mergeFolderTable(Database src, Database dst, String folder) {
   if (!_tableExists(dst, folder)) {
     return;
   }
+  // 旧版本的收藏夹表没有追更三列。补上之后再算共同列，否则云端带过来的
+  // 追更状态会因为「本地没这列」被整个丢掉，一次合并下来永远是空的。
+  _ensureFollowUpdateColumns(dst, folder);
 
   var columns = _commonColumns(
     _columnsOf(src, folder),
@@ -340,11 +343,20 @@ void _mergeFolderTable(Database src, Database dst, String folder) {
     for (var row in src.select('select * from ${_quote(folder)};')) {
       var remote = _rowToMap(row, columns);
       var existing = dst.select(
-        'select 1 from ${_quote(folder)} where id == ? and type == ?;',
+        'select * from ${_quote(folder)} where id == ? and type == ?;',
         [remote['id'], remote['type']],
       );
       if (existing.isNotEmpty) {
-        // 本地已经有收藏了，保留本地状态（含排序、标签翻译、封面缓存）。
+        // 本地已经有收藏了，保留本地状态（含排序、标签翻译、封面缓存），
+        // 但「追更状态」要按时间戳合并，否则一台设备检查出的更新在另一台
+        // 上永远不会出现——表现为「同步了，但更新列表还是空的」。
+        _mergeFollowUpdateState(
+          dst,
+          folder,
+          columns,
+          remote,
+          _rowToMap(existing.first, columns),
+        );
         continue;
       }
       if (orderIndex >= 0) {
@@ -357,6 +369,110 @@ void _mergeFolderTable(Database src, Database dst, String folder) {
     dst.execute('ROLLBACK;');
     rethrow;
   }
+}
+
+/// 给收藏夹表补上追更三列（旧 schema 没有）。
+///
+/// 与 `LocalFavoritesManager.prepareTableForFollowUpdates` 保持一致，但这里
+/// 不能调用它——合并跑在 Isolate 里，主线程的 manager 已经 close 了。
+void _ensureFollowUpdateColumns(Database dst, String table) {
+  var existing = _columnsOf(dst, table).toSet();
+  const needed = {
+    'last_update_time': 'TEXT',
+    'has_new_update': 'int',
+    'last_check_time': 'int',
+  };
+  for (var entry in needed.entries) {
+    if (existing.contains(entry.key)) {
+      continue;
+    }
+    dst.execute(
+      'alter table ${_quote(table)} add column ${entry.key} ${entry.value};',
+    );
+  }
+}
+
+/// 合并收藏夹里同一条漫画的「追更状态」三列。
+///
+/// 这三列（`last_update_time` / `has_new_update` / `last_check_time`）原先
+/// 在 [_mergeFolderTable] 里被整条跳过——因为「本地已有就保留本地」。结果
+/// 是追更状态永远只存在于检查过更新的那台设备上，另一台无论怎么同步都看不到
+/// 更新，更新列表一直空着。
+///
+/// 这三列是**真正的可变状态**，必须按 `last_check_time` 的新旧取舍：
+/// - 云端检查得更晚 → 用云端的三个值（也包括「已读」这种清零状态）。
+/// - 本地检查得更晚 → 保持本地。
+///
+/// 其余列（名称、封面、标签、排序）仍然保留本地，不在这里动。
+void _mergeFollowUpdateState(
+  Database dst,
+  String folder,
+  List<String> columns,
+  Map<String, Object?> remote,
+  Map<String, Object?> local,
+) {
+  var hasUpdateTime = columns.contains('last_update_time');
+  var hasNewUpdate = columns.contains('has_new_update');
+  var hasCheckTime = columns.contains('last_check_time');
+  if (!hasUpdateTime && !hasNewUpdate && !hasCheckTime) {
+    return;
+  }
+
+  var localCheck = local['last_check_time'];
+  var remoteCheck = remote['last_check_time'];
+  var localCheckValue = localCheck is int ? localCheck : 0;
+  var remoteCheckValue = remoteCheck is int ? remoteCheck : 0;
+
+  // 云端从没检查过：没有可用的信息，别用它把本地状态冲成空。
+  if (remoteCheckValue <= 0) {
+    return;
+  }
+
+  if (localCheckValue < remoteCheckValue) {
+    // 云端检查得更晚，直接用云端。
+  } else if (localCheckValue > remoteCheckValue) {
+    // 本地检查得更晚，保持本地。
+    return;
+  } else if (hasUpdateTime) {
+    // 检查时间打平（两台都在同一天检查过）：谁看到的更新日期更晚，
+    // 谁的信息更新。用字典序比较即可，日期是 `YYYY-MM-DD` 定宽格式。
+    var localDate = local['last_update_time'];
+    var remoteDate = remote['last_update_time'];
+    if (localDate is! String || remoteDate is! String) {
+      return;
+    }
+    if (remoteDate.compareTo(localDate) <= 0) {
+      return;
+    }
+  } else {
+    return;
+  }
+
+  var sets = <String>[];
+  var args = <Object?>[];
+  if (hasUpdateTime) {
+    sets.add('last_update_time = ?');
+    args.add(remote['last_update_time']);
+  }
+  if (hasNewUpdate) {
+    sets.add('has_new_update = ?');
+    args.add(remote['has_new_update']);
+  }
+  if (hasCheckTime) {
+    sets.add('last_check_time = ?');
+    args.add(remoteCheckValue);
+  }
+  if (sets.isEmpty) {
+    return;
+  }
+  args
+    ..add(remote['id'])
+    ..add(remote['type']);
+  dst.execute(
+    'update ${_quote(folder)} set ${sets.join(', ')} '
+    'where id == ? and type == ?;',
+    args,
+  );
 }
 
 int _maxInt(Database db, String table, String column) {
