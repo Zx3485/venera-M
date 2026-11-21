@@ -431,8 +431,23 @@ void _mergeFollowUpdateState(
   if (localCheckValue < remoteCheckValue) {
     // 云端检查得更晚，直接用云端。
   } else if (localCheckValue > remoteCheckValue) {
-    // 本地检查得更晚，保持本地。
-    return;
+    // 本地时间戳更晚。但「读过了」（markAsRead 推时间戳）和
+    // 「检查到了更新」（updateUpdateTime 推时间戳）都算晚，含义完全不同：
+    // 如果云端看到了更晚的更新日期，说明云端有本地没看到的新章节，
+    // 不能让本地的「已读」把它压掉，否则新更新的红点永远出不来。
+    if (hasUpdateTime) {
+      var localDateLocal = local['last_update_time'];
+      var remoteDateLocal = remote['last_update_time'];
+      if (localDateLocal is String &&
+          remoteDateLocal is String &&
+          remoteDateLocal.compareTo(localDateLocal) > 0) {
+        // 云端有新章节，落到下面的写入。
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
   } else if (hasUpdateTime) {
     // 检查时间打平（两台都在同一天检查过）：谁看到的更新日期更晚，
     // 谁的信息更新。用字典序比较即可，日期是 `YYYY-MM-DD` 定宽格式。
@@ -441,8 +456,21 @@ void _mergeFollowUpdateState(
     if (localDate is! String || remoteDate is! String) {
       return;
     }
-    if (remoteDate.compareTo(localDate) <= 0) {
+    var cmp = remoteDate.compareTo(localDate);
+    if (cmp < 0) {
       return;
+    }
+    if (cmp == 0 && hasNewUpdate) {
+      // 更新日期也完全相同：只剩「已读/未读」这一处差异。
+      // 这种打平几乎只出现在旧版本数据上——那时候 markAsRead 不清时间戳，
+      // 「读过了」没留下任何时间证据。这里的取舍原则是**已读优先**：
+      // 多标一次未读只是多点一下，而红点永远消不掉是持续的困扰。
+      var localFlag = local['has_new_update'];
+      var remoteFlag = remote['has_new_update'];
+      if (localFlag == 0 && remoteFlag == 1) {
+        // 本地已读、云端未读，保留本地已读。
+        return;
+      }
     }
   } else {
     return;

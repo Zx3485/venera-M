@@ -355,6 +355,131 @@ void main() {
     expect(row['has_new_update'], 1);
   });
 
+  test('在另一台设备读完后，这台设备的「有更新」也要清掉', () {
+    var incomingPath = '${tmp.path}/incoming.db';
+    var localPath = '${tmp.path}/local.db';
+
+    // 设备 A：读过了，has_new_update 被清零。
+    // 注意 markAsRead 过去只改这一列，两个时间戳原样不动——这正是 bug 所在：
+    // 清零点没有留下任何时间证据，合并时无法判断哪边更新。
+    var incoming = _createDb(incomingPath, folder: folder);
+    _addComic(
+      incoming,
+      folder,
+      id: 'comic-read-elsewhere',
+      type: 1,
+      lastUpdateTime: '2026-11-21',
+      hasNewUpdate: 0, // 读过了
+      lastCheckTime: 4000,
+    );
+    incoming.dispose();
+
+    // 设备 B：还没读，还标着有更新，而且它的检查时间"看起来"更晚。
+    var local = _createDb(localPath, folder: folder);
+    _addComic(
+      local,
+      folder,
+      id: 'comic-read-elsewhere',
+      type: 1,
+      lastUpdateTime: '2026-11-21',
+      hasNewUpdate: 1,
+      lastCheckTime: 4000,
+    );
+    local.dispose();
+
+    mergeFavoriteDatabases(incomingPath: incomingPath, localPath: localPath);
+
+    local = sqlite3.open(localPath);
+    var row = _readComic(local, folder, 'comic-read-elsewhere');
+    local.dispose();
+
+    expect(row['has_new_update'], 0,
+        reason: '另一台已经读完了，这台不该再提示有更新');
+  });
+
+  test('已读推进时间戳后走正常分支：云端更晚的已读状态要采纳', () {
+    var incomingPath = '${tmp.path}/incoming.db';
+    var localPath = '${tmp.path}/local.db';
+
+    // 设备 A 读完时 markAsRead 推进了 last_check_time → 比 B 更新。
+    var incoming = _createDb(incomingPath, folder: folder);
+    _addComic(
+      incoming,
+      folder,
+      id: 'comic-main-path',
+      type: 1,
+      lastUpdateTime: '2026-11-21',
+      hasNewUpdate: 0,
+      lastCheckTime: 9000, // 读完的时刻，比 B 的检查时间晚
+    );
+    incoming.dispose();
+
+    // 设备 B：只知道检查出更新，还不知道 A 读过了。
+    var local = _createDb(localPath, folder: folder);
+    _addComic(
+      local,
+      folder,
+      id: 'comic-main-path',
+      type: 1,
+      lastUpdateTime: '2026-11-21',
+      hasNewUpdate: 1,
+      lastCheckTime: 8000,
+    );
+    local.dispose();
+
+    mergeFavoriteDatabases(incomingPath: incomingPath, localPath: localPath);
+
+    local = sqlite3.open(localPath);
+    var row = _readComic(local, folder, 'comic-main-path');
+    local.dispose();
+
+    expect(row['has_new_update'], 0, reason: '云端是更新一轮的状态，红点要清掉');
+    expect(row['last_check_time'], 9000, reason: '时间戳要跟着推进');
+  });
+
+  test('本地读过之后云端又出了新章节，新更新不能被本地已读压掉', () {
+    var incomingPath = '${tmp.path}/incoming.db';
+    var localPath = '${tmp.path}/local.db';
+
+    // 云端：又出了一话，更新时间更晚。
+    var incoming = _createDb(incomingPath, folder: folder);
+    _addComic(
+      incoming,
+      folder,
+      id: 'comic-new-chapter',
+      type: 1,
+      lastUpdateTime: '2026-11-22', // 新章节
+      hasNewUpdate: 1,
+      lastCheckTime: 7000,
+    );
+    incoming.dispose();
+
+    // 本地：刚读完上一话，markAsRead 把时间戳推到 9000（比云端还晚），
+    // 但 last_update_time 还停在 2026-11-21。
+    var local = _createDb(localPath, folder: folder);
+    _addComic(
+      local,
+      folder,
+      id: 'comic-new-chapter',
+      type: 1,
+      lastUpdateTime: '2026-11-21',
+      hasNewUpdate: 0,
+      lastCheckTime: 9000,
+    );
+    local.dispose();
+
+    mergeFavoriteDatabases(incomingPath: incomingPath, localPath: localPath);
+
+    local = sqlite3.open(localPath);
+    var row = _readComic(local, folder, 'comic-new-chapter');
+    local.dispose();
+
+    expect(row['last_update_time'], '2026-11-22',
+        reason: '云端的更新时间更晚，说明有新章节');
+    expect(row['has_new_update'], 1,
+        reason: '本地「读过」只代表读过上一话，不能把新章节的红点也压掉');
+  });
+
   test('云端新收藏的漫画仍然要能合并进来', () {
     var incomingPath = '${tmp.path}/incoming.db';
     var localPath = '${tmp.path}/local.db';

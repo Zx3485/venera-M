@@ -977,10 +977,16 @@ class LocalFavoritesManager with ChangeNotifier {
             UPDATE "$folder"
             SET 
               $updateLocationSql
-              ${followUpdatesFolder == folder ? "has_new_update = 0," : ""}
+              ${followUpdatesFolder == folder ? "has_new_update = 0, last_check_time = ?, " : ""}
               time = ?
             WHERE id == ? and type == ?;
-          """, [newTime, id, type.value]);
+          """, [
+          if (followUpdatesFolder == folder)
+            DateTime.now().millisecondsSinceEpoch,
+          newTime,
+          id,
+          type.value
+        ]);
         if (followUpdatesFolder == folder) {
           updateFollowUpdatesUI();
         }
@@ -1238,6 +1244,17 @@ class LocalFavoritesManager with ChangeNotifier {
         .toList();
   }
 
+  /// 把一条漫画标记为「已读」（清掉追更红点）。
+  ///
+  /// 关键：**必须同时推进 `last_check_time`**。
+  ///
+  /// 以前只把 `has_new_update` 清成 0，两个时间戳原样不动。合并同步时
+  /// 追更状态按 `last_check_time` 取舍，于是「A 读完了」这件事在 B 眼里
+  /// 完全不可见——B 的时间戳一样或更新，就会认为自己的 `has_new_update=1`
+  /// 才是对的，红点永远消不掉。
+  ///
+  /// 推进时间戳之后，「读过了」就变成一次**带时间戳的、可比较的事件**，
+  /// 合并时能被正确采纳。
   void markAsRead(String id, ComicType type) {
     var folder = appdata.settings['followUpdatesFolder'];
     if (!existsFolder(folder)) {
@@ -1245,9 +1262,9 @@ class LocalFavoritesManager with ChangeNotifier {
     }
     _db.execute("""
       update "$folder"
-      set has_new_update = 0
+      set has_new_update = 0, last_check_time = ?
       where id == ? and type == ?;
-    """, [id, type.value]);
+    """, [DateTime.now().millisecondsSinceEpoch, id, type.value]);
   }
 
   void close() {
